@@ -1,0 +1,316 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><!-- Creator     : groff version 1.18.1 -->
+<!-- CreationDate: Tue Oct 14 13:58:18 2008 -->
+
+
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta name="Content-Style" content="text/css">
+<title>DHCPCL</title>
+</head><body>
+
+<h1 align="center">DHCPCL</h1>
+<a href="#NAME">NAME</a><br>
+<a href="#SYNOPSIS">SYNOPSIS</a><br>
+<a href="#DESCRIPTION">DESCRIPTION</a><br>
+<a href="#OPTIONS">OPTIONS</a><br>
+<a href="#USAGE">USAGE</a><br>
+<a href="#TRACES">TRACES</a><br>
+<a href="#EXAMPLES">EXAMPLES</a><br>
+<a href="#NOTES">NOTES</a><br>
+<a href="#AUTHOR">AUTHOR</a><br>
+<a href="#SEE%20ALSO">SEE ALSO</a><br>
+<a href="#STANDARDS">STANDARDS</a><br>
+<a href="#BUGS">BUGS</a><br>
+
+<hr>
+<a name="NAME"></a>
+<h2>NAME</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>dhcpcl</b> &#8722; simple, incomplete and incompatible
+DHCP client</p>
+</td>
+</tr></tbody></table>
+<a name="SYNOPSIS"></a>
+<h2>SYNOPSIS</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>dhcpcl</b> <i>iface [&#8722;t timeout] [&#8722;a
+address] [&#8722;l lease] [-h hostname] [&#8722;d]</i></p>
+</td>
+</tr></tbody></table>
+<a name="DESCRIPTION"></a>
+<h2>DESCRIPTION</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>Dhcpcl</b> is a simple, incomplete and incompatible
+DHCP client. It negotiates a lease with a DHCP server and
+configures the interface <i>iface</i> accordingly.</p>
+</td>
+</tr></tbody></table>
+<a name="OPTIONS"></a>
+<h2>OPTIONS</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>&#8722;t</b> <i>timeout</i></p></td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Time to wait for a server response before giving up. The
+default value is 64 seconds.</p>
+</td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>&#8722;a</b> <i>address</i></p></td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>The IPv4 address, in dot-decimal notation, you are trying
+to obtain from the DHCP server.</p>
+</td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>&#8722;l</b> <i>lease</i></p></td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>The lease time you are trying to obtain, in seconds. Use
+&#8217;inf&#8217; for infinite. The default time is
+infinite.</p>
+</td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>&#8722;h</b> <i>hostname</i></p></td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>Specifies the string that will appear in the hostname
+option field of the DHCP datagram.</p>
+</td>
+</tr></tbody></table>
+<!-- TABS -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="4" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="13%"></td>
+<td width="2%">
+
+<p><b>&#8722;d</b></p>
+</td>
+<td width="5%"></td>
+<td width="77%">
+
+<p>Debug mode. Developers use this option to isolate users
+from chatty debugging outputs.</p>
+</td>
+</tr></tbody></table>
+<a name="USAGE"></a>
+<h2>USAGE</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>Dhcpcl</b> only manage and configure an interface, it
+doesn&#8217;t configure the DNS resolver or any other DHCP
+extension.</p>
+<!-- INDENTATION -->
+<p>When invoked on an already configured interface,
+<b>dcpcl</b> gives an error message on standard error.</p>
+<!-- INDENTATION -->
+<p>When the program receives the SIGUSR2 signal, a release
+of the leased address is issued and a graceful shutdown
+performed. If the program is abruptly killed with the SIGINT
+signal, no release is performed.</p>
+<!-- INDENTATION -->
+<p><b>Dhcpcl</b> exit code must be 0 if all the parameters
+were successfully obtained, 1 if there was no response from
+the server and -1 if there was any error.</p>
+</td>
+</tr></tbody></table>
+<a name="TRACES"></a>
+<h2>TRACES</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>The program shows traces on the standard output with the
+following format:</p>
+<!-- INDENTATION -->
+<pre>#[<i>timestamp</i>] PID = <i>pid</i>.
+#[<i>timestamp</i>] (<i>xid</i>) DHCPDISCOVER sent.
+#[<i>timestamp</i>] (<i>xid</i>) DHCPOFFER received from <i>ip_s</i> (offered <i>ip_c</i>).
+#[<i>timestamp</i>] (<i>xid</i>) DHCPREQUEST sent to <i>ip_s</i>.
+#[<i>timestamp</i>] (<i>xid</i>) DHCPACK received: <i>ip_c</i> with leasing <i>l</i> seconds.
+#[<i>timestamp</i>] (<i>xid</i>) DHCPNACK received.
+#[<i>timestamp</i>] (<i>xid</i>) DHCPRELEASE sent <i>ip_c</i> released.
+#[<i>timestamp</i>] SIGINT received.
+#[<i>timestamp</i>] SIGUSR2 received.
+</pre>
+<!-- INDENTATION -->
+<p><i>Timestamps</i> are the system time, according to the
+format defined under RFC 3339. <i>Xid</i> is the transaction
+ID in hexadecimal. <i>Pid</i> is the proccess ID of the
+client. Useful if you want to send it a signal. <i>Ip_s</i>
+and <i>ip_c</i> are the server and client IPv4 in
+dot-decimal notation. <i>L</i> is the lease time in
+seconds.</p>
+</td>
+</tr></tbody></table>
+<a name="EXAMPLES"></a>
+<h2>EXAMPLES</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<pre>; ifconfig
+lo      Link encap:Local Loopback
+        inet addr:127.0.0.1  Mask:255.255.255.0
+        UP LOOPBACK RUNNING  MTU:1500  Metric:1
+        RX packets:306 errors:0 dropped:0 overruns:0 frame:0
+        TX packets:306 errors:0 dropped:0 overruns:0 carrier:0
+        collisions:0 txqueuelen:0
+        RX bytes:29504 (28.8 Kb)  TX bytes:29504 (28.8 Kb)
+; dhcpcl eth1 -t 15 -a 192.168.100.25
+#[2008-10-11 15:30:34+02:00] (0x12345678) pid = 13086.
+#[2008-10-11 15:30:34+02:00] (0x12345678) DHCPDISCOVER sent.
+#[2008-10-11 15:30:39+02:00] (0x12345678) DHCPDISCOVER sent.
+#[2008-10-11 15:30:40+02:00] (0x12345678) DHCPOFFER received from 192.168.100.0 (offered 192.168.100.20).
+#[2008-10-11 15:30:40+02:00] (0x12345678) DHCPREQUEST sent to 192.168.100.0.
+#[2008-10-11 15:30:41+02:00] (0x12345678) DHCPACK received: 192.168.100.20 with leasing 86400 seconds.
+#[2008-10-11 15:32:01+02:00] SIGINT received.
+; ifconfig eth1
+eth1    Link encap:Ethernet  HWaddr FE:FD:00:00:01:01
+        inet addr:192.168.100.20  Bcast:192.168.100.255  Mask:255.255.255.0
+        UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+        RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+        TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+        collisions:0 txqueuelen:1000
+        RX bytes: 0 (0 kb)  TX bytes: 0 (0 Kb)
+        Interrupt:28
+</pre>
+</td>
+</tr></tbody></table>
+<a name="NOTES"></a>
+<h2>NOTES</h2>
+<!-- INDENTATION -->
+
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>Dhcpcl</b> responds to the following signals:</p>
+</td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>SIGUSR2</p></td>
+</tr></tbody></table>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="21%"></td>
+<td width="77%">
+<p>This signal causes <b>dhcpcl</b> to release the current
+lease, bring down the interface and ends the program.</p>
+</td>
+</tr></tbody></table>
+<!-- TABS -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="3" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="13%"></td>
+<td width="8%">
+
+<p>SIGINT</p>
+</td>
+<td width="77%">
+
+<p>This signal exits the process abruptly, without
+releasing the leased address or bringing down the
+interface.</p>
+</td>
+</tr></tbody></table>
+<a name="AUTHOR"></a>
+<h2>AUTHOR</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>Some forgotten UC3M student.</p>
+</td>
+</tr></tbody></table>
+<a name="SEE ALSO"></a>
+<h2>SEE ALSO</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>udhcpc</b>(8), <b>date</b>(1),</p>
+</td>
+</tr></tbody></table>
+<a name="STANDARDS"></a>
+<h2>STANDARDS</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>Dhcpcl</b> is based on RFC 2131, but it is an
+incomplete and incompatible implementation made for didactic
+purposes.</p>
+</td>
+</tr></tbody></table>
+<a name="BUGS"></a>
+<h2>BUGS</h2>
+<!-- INDENTATION -->
+<table rules="none" width="100%" border="0" cellpadding="0" cellspacing="0" cols="2" frame="void">
+<tbody><tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p>Many!</p>
+</td>
+</tr></tbody></table>
+<hr>
+</body></html>
