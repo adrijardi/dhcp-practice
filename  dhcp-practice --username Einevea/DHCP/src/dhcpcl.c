@@ -5,11 +5,17 @@
  *      Author: dconde
  */
 #include<stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "dhcpcl.h"
 
 
 //Parametros globales.
-int exit_value;
+int exit_value, timeout, lease;
+char* iface, hostname, address;
+int debug = 0; // [Off: 0] [On: 1]
+
 
 int main(int argc, const char* argv[]){
 	exit_value = checkParams(argc, argv);
@@ -22,17 +28,40 @@ int main(int argc, const char* argv[]){
 int checkParams(int argc, const char* argv[]){
 	int ret = 0;
 	int i;
+	char* param, *errPtr;
 	if(argc >= 2 && argc <= 11){
-		for (i = 1; i < argc; i++) {
-			// Se comprueba el numero de parametros.
-						/*if ( argc >= 1 && argc <= 6 ){
-							x = atoi( argv[1] );
-							y = atoi( argv[2] );
+		iface = (char*)argv[1];
+		for (i = 2; i < argc && ret != -1; i+=2) {
+			param = (char*)argv[i];
+			if(strcmp(param,"-t")==0 && i+1 < argc){
+				timeout = strtol(argv[i+1], &errPtr, 0);
+				if(strlen(errPtr)!=0){
+					printParamsError(1);
+					ret = -1;
+				}
 
-							printf( "%d + %d = %d\n", x, y, x + y );
+			}else if(strcmp(param,"-h")==0 && i+1 < argc){
+				param = (char*)argv[i+1];
+				printf("-h: %s\n", param);
 
-							// Will print something like: 3 + 2 = 5
-						}*/
+			}else if(strcmp(param,"-a")==0 && i+1 < argc){
+				param = (char*)argv[i+1];
+				printf("-a: %s\n", param);
+
+			}else if(strcmp(param,"-l")==0 && i+1 < argc){
+				lease = strtol(argv[i+1], &errPtr, 0);
+				if(strlen(errPtr)!=0){
+					printParamsError(2);
+					ret = -1;
+				}
+
+			}else if(strcmp(param,"-d")==0){
+				printf("Debug mode [ON]\n");
+				debug = 1;
+			}else{
+				printParamsError(0);
+				ret = -1;
+			}
 		}
 	}else{
 		printParamsError(0);
@@ -50,6 +79,14 @@ void printParamsError(int err){
 			printf("  −a address:\n\tIndica la ultima direccion IP conocida, para ser enviada en el DHCPDISCOVER.\n");
 			printf("  −l lease:\n\tEspecifica el valor del temporizador de arriendo sugerido al servidor, el servidor puede sobreescribir este valor.\n\tEl valor por defecto es infinito\n");
 			printf("  −d:\n\tModo de depuracion.\n");
+			break;
+		case 1:
+			printf("Error en el formato del valor de timeout.\n");
+			printf("  −t timeout: utiliza valores enteros que representan segundos.\n");
+			break;
+		case 2:
+			printf("Error en el formato del valor de lease.\n");
+			printf("  −l lease: utiliza valores enteros que representan segundos.\n");
 			break;
 		default:
 			break;
