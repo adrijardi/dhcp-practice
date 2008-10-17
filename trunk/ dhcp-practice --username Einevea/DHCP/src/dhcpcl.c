@@ -13,31 +13,52 @@
 
 //Parametros globales.
 int exit_value, timeout, lease;
-char* iface, hostname, address;
-int debug = 0; // [Off: 0] [On: 1]
+char *iface, *hostname, *address;
+int debug = DEBUG_OFF;
 
+//DECLARACION DE METODOS INTERNOS
+void printParamsError(int err);
+int checkParams(int argc, const char* argv[]);
 
+/*
+ * Funcion de inicio
+ */
 int main(int argc, const char* argv[]){
 	exit_value = checkParams(argc, argv);
 	if(exit_value==0){
-		printf("HolaMundo%d\n", argc);
+		printf("HolaMundo%d\n", EXIT_ERROR);
+		printf("HolaMundo%d\n", EXIT_NORMAL);
+		printf("HolaMundo%d\n", EXIT_NO_RESPONSE);
 	}
 	return exit_value;
 }
 
+/*
+ * Funcion que comprueba el numero de parametros de entrada, el formato de los mismos
+ * y asigna los valores a las variables globales.
+ */
 int checkParams(int argc, const char* argv[]){
-	int ret = 0;
+	int ret = EXIT_NORMAL;
 	int i;
-	char* param, *errPtr;
+	char *param, *errPtr;
+
+	//Se comprueba el numero de parametros
 	if(argc >= 2 && argc <= 11){
+
+		//Se asigna el iface
 		iface = (char*)argv[1];
+
 		for (i = 2; i < argc && ret != -1; i+=2) {
+
+			// Se comprueba que la cadena sea de un parametro acordado
 			param = (char*)argv[i];
 			if(strcmp(param,"-t")==0 && i+1 < argc){
+				//Se asigna el parametro timeout
 				timeout = strtol(argv[i+1], &errPtr, 0);
+				//Se comprueba que no haya habido un error de formato
 				if(strlen(errPtr)!=0){
 					printParamsError(1);
-					ret = -1;
+					ret = EXIT_ERROR;
 				}
 
 			}else if(strcmp(param,"-h")==0 && i+1 < argc){
@@ -49,27 +70,35 @@ int checkParams(int argc, const char* argv[]){
 				printf("-a: %s\n", param);
 
 			}else if(strcmp(param,"-l")==0 && i+1 < argc){
+				//Se asigna el parametro de lease
 				lease = strtol(argv[i+1], &errPtr, 0);
+				//Se comprueba que no haya habido un error de formato
 				if(strlen(errPtr)!=0){
 					printParamsError(2);
-					ret = -1;
+					ret = EXIT_ERROR;
 				}
 
 			}else if(strcmp(param,"-d")==0){
+				//Se activa el modo debug
 				printf("Debug mode [ON]\n");
-				debug = 1;
+				debug = DEBUG_ON;
+
 			}else{
+				//El parametro recibido no es un parametro acordado
 				printParamsError(0);
-				ret = -1;
+				ret = EXIT_ERROR;
 			}
 		}
 	}else{
 		printParamsError(0);
-		ret = -1;
+		ret = EXIT_ERROR;
 	}
 	return ret;
 }
 
+/*
+ * Funcion que imprime los mensajes de error de los parametros de entrada.
+ */
 void printParamsError(int err){
 	switch (err) {
 		case 0:
