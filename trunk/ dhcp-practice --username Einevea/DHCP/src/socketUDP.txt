@@ -1,0 +1,103 @@
+#alberto cortés alcortes@it.uc3m.es it.uc3m.es/alcortes
+
+#Fuente de información para la practica: beej's guide to network programmind
+
+
+#Con los socket puedes inyectarte en cualquiera de los niveles TCP/IP, pero en la practina nos tenemos que inyectar en varios niveles de TCP/IP
+
+-- PASOS DE UTILIZACIÓN DE SOCKET --
+CREACIÓN SOCKET
+	int socket(int domain, int type, int protocol);-->devuelve un identificador del socket
+	//domain = entero que identifica un enumerado PF_INET, PF_PACKET... (protocol family) (identifica el nivel en TCP/IP)
+	//type = etero que identifica un enumerado :
+		SOCK_DGRAM: Transmisión no fiable, no orientadas a conexión. (Ejemplo UDP)
+		SOCK_STREAM: Transmisión fiable, orientado a conexión. (Ejemplo TCP)
+		SOCK_RAW: En bruto, no quieres que el kernel haga nada, para crear protocolos o violar restricciones de protocolos.
+		...
+	//protocol = define cual de todos los protocolos quieres usar (0 valor por defecto, que elije el kernel)
+Ejemplos: USAMOS LOS *
+PF_INET SOCK_STREAM TCP
+PF_INET SOCK_DGRAM UDP *
+PF_INET SOCK_RAW (CMP, BGP)
+PF_PACKET SOCK_DGRAM * //para programar tu propio protocolo ip, arp,
+ 	
+CONFIGURACIÓN
+
+son todo cosas triviales, estilo listen, conect...
+para decir que no es bloqueante y configuraciones de bajo nivel....
+ioectl: funcion para modificar las configuraciones de bajo nivel....
+
+
+OPERACIÓN (Lectura y escritura):
+//Estas funciones son bloqueantes asi que hay que tener multihilo. cuidado con los send no tiene por que mandar todo y no en el momento.
+send(int fd,, void * buf, size_t len, int flags /*por defectno nos vale, poner 0*/) // para protocolos orientados a conexion
+sendto(int fd,, void * buf, size_t len, int flags /*por defectno nos vale, poner 0*/, struct sockaddr* to, size_t tolen/*longitud de la estructura*/) //para los no orientados a conexión
+
+recive //para protocolos orientados a conexion
+recivefrom //para protocolos no orientados a conexión
+
+los struct para hacer cabeceras no tienen por que tener la misma estructura, hacer un struct y una función que te lo transforme a la cabecera para esegurarlo.
+
+en el main,se tendra un bucle de información de varias fuentes de información
+con lo que interesa escucha de varias fuentas(descriptores de ficheros)
+para ello se usa la función select (que es una llamada bloqueante que se despierta indicando el lector de fichero)
+select (recibe descriptores de ficheros en un conjuntos 3 conjuntos) mirar... en unix todo es con select 
+
+
+CIERRE
+	close(s); //s = identificador del socket
+	
+-- NOTAS --
+Direcciones ip:
+Habituados a notacion decimal separado por puntos.
+pero el kernel utiliza un entero de 32 bits, que se utiliza en un 
+struct in_addrs{
+....
+}
+fundiones que transforman:
+inet_aton
+inet_natoa //Cuidado con esto no se debe alterar 
+Envoltorio polimorfico para las direcciones en los socket llamado 
+struct sockaddr{
+	int family // entero que identifica un enumerado AF_INET, AF_PACKET....
+	char data[..]
+}
+
+/*
+ * Direccion ip
+ */
+struct sockaddr_in{
+	int family = AF_INET
+	struct in_addr addr
+	int port
+}
+
+/*
+ * Para el nivel de enlace (MAC?)
+ */
+struct sockaddr_ll{
+	
+}
+
+endianness (tiene que ver con mapa de memoria) problemas de endianness entre maquinas distintas que almacenan enteros largos
+network byte order -> formato de red.
+funciones:
+ntohl,ntohs, htonl, htons  //networt to host, host to network
+
+-----------------------------------------------------------------------------------------------------------------------------
+-- DHCP
+
+primero pf_packet //para configurar el ip
+luego pf_inet // para continuar pidiendo una ip cuando se agonta el tiempo concedido
+Perfil de calidad de la practica (triangular) pocos buenos, y muchos con practicas malas, quieren que la practica sea triangular invertida (con lo que son mas estrictos corrigiendo)
+Practica bien hecha, resumido en las condiciones bien hechas de la parctica, una mal hecha ni la miran directamente suspensa:
+todas las compilaciones -Wall (y usando los compiladores de las aulas) y no puede dar ningun warnings. (mirar el -Wall en el make)
+No puede haber fugas de memoria usar valgrind que el profesor lo va a usar y si estan fallando suspendes
+
+
+--DHCPlab
+
+sobre maquias virtuales mirarlo bien
+
+
+
