@@ -5,10 +5,11 @@
  *      Author: dconde
  */
 #include<stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "dhcpcl.h"
+#include "constants.h"
+#include "pruebas/pruebas.h"
 
 
 //Parametros globales.
@@ -26,9 +27,7 @@ int checkParams(int argc, const char* argv[]);
 int main(int argc, const char* argv[]){
 	exit_value = checkParams(argc, argv);
 	if(exit_value==0){
-		printf("HolaMundo%d\n", EXIT_ERROR);
-		printf("HolaMundo%d\n", EXIT_NORMAL);
-		printf("HolaMundo%d\n", EXIT_NO_RESPONSE);
+		pruebaFormatoMsg();
 	}
 	return exit_value;
 }
