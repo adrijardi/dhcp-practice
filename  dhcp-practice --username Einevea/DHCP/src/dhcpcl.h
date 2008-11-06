@@ -8,9 +8,4 @@
 #ifndef DHCPCL_H_
 #define DHCPCL_H_
 
-//Valores de salida del programa
-#define EXIT_ERROR	-1
-#define EXIT_NORMAL	0
-#define EXIT_NO_RESPONSE	1
-
 #endif /* DHCPCL_H_ */

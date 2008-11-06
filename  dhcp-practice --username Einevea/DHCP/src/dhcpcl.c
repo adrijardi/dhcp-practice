@@ -4,32 +4,70 @@
  *  Created on: 17-oct-2008
  *      Author: dconde
  */
-#include<stdio.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "dhcpcl.h"
 #include "constants.h"
+#include "utils.h"
 #include "pruebas/pruebas.h"
+#include "dhcp_state.h"
+#include "transfer.h"
 
-
-//Parametros globales.
-int exit_value, timeout, lease;
-char *iface, *hostname, *address;
-int debug = DEBUG_OFF;
 
 //DECLARACION DE METODOS INTERNOS
 void printParamsError(int err);
 int checkParams(int argc, const char* argv[]);
+void pruebas();
+int checkIFace( char* iface);
+void getFileParams();
+int init();
+void clean_close();
+
+
+
+void pruebas(){
+	//pruebaFormatoMsg();
+}
 
 /*
  * Funcion de inicio
  */
 int main(int argc, const char* argv[]){
+	debug = DEBUG_OFF;
 	exit_value = checkParams(argc, argv);
+	pruebas();//TODO quitar
 	if(exit_value==0){
-		pruebaFormatoMsg();
+		printTrace(0, PID, NULL);
+		getFileParams();
+		exit_value=init();
+		clean_close();
 	}
 	return exit_value;
+}
+void clean_close(){
+	free(haddress);
+}
+
+int init(){
+	// Se inicializan los parametros del estado.
+	state = INIT;
+	haddress=NULL;
+
+	// Se espera un numero aleatorio de segundos entre 1 y 10
+	srandom(time(NULL));
+	time_wait((random()%9000)+1000);
+	//Se van a necesitar varios hilos a partir de este punto, envio de tramas y recepción de tramas bloqueantes.
+	//sendMessage();
+	obtainHardwareAddress();
+	sendDHCPDISCOVER();
+	return EXIT_NORMAL; //TODO
+}
+
+void getFileParams(){
+	fprintf(stdout,"Obtenemos parametros?\n");
 }
 
 /*
@@ -38,60 +76,74 @@ int main(int argc, const char* argv[]){
  */
 int checkParams(int argc, const char* argv[]){
 	int ret = EXIT_NORMAL;
-	int i;
+	int i, iface_state;
 	char *param, *errPtr;
 
 	//Se comprueba el numero de parametros
 	if(argc >= 2 && argc <= 11){
 
 		//Se asigna el iface
-		iface = (char*)argv[1];
 
-		for (i = 2; i < argc && ret != -1; i+=2) {
+		iface_state = checkIFace((char*)argv[1]);
+		if(iface_state == true){
+			iface = (char*)argv[1];
 
-			// Se comprueba que la cadena sea de un parametro acordado
-			param = (char*)argv[i];
-			if(strcmp(param,"-t")==0 && i+1 < argc){
-				//Se asigna el parametro timeout
-				timeout = strtol(argv[i+1], &errPtr, 0);
-				//Se comprueba que no haya habido un error de formato
-				if(strlen(errPtr)!=0){
-					printParamsError(1);
+			for (i = 2; i < argc && ret != -1; i+=2) {
+
+				// Se comprueba que la cadena sea de un parametro acordado
+				param = (char*)argv[i];
+				if(strcmp(param,"-t")==0 && i+1 < argc){
+					//Se asigna el parametro timeout
+					timeout = strtol(argv[i+1], &errPtr, 0);
+					//Se comprueba que no haya habido un error de formato
+					if(strlen(errPtr)!=0){
+						printParamsError(1);
+						ret = EXIT_ERROR;
+					}
+
+				}else if(strcmp(param,"-h")==0 && i+1 < argc){
+					param = (char*)argv[i+1];
+					printf("-h: %s\n", param);
+
+				}else if(strcmp(param,"-a")==0 && i+1 < argc){
+					param = (char*)argv[i+1];
+					printf("-a: %s\n", param);
+
+				}else if(strcmp(param,"-l")==0 && i+1 < argc){
+					//Se asigna el parametro de lease
+					lease = strtol(argv[i+1], &errPtr, 0);
+					//Se comprueba que no haya habido un error de formato
+					if(strlen(errPtr)!=0){
+						printParamsError(2);
+						ret = EXIT_ERROR;
+					}
+
+				}else if(strcmp(param,"-d")==0){
+					//Se activa el modo debug
+					printf("Debug mode [ON]\n");
+					debug = DEBUG_ON;
+
+				}else{
+					//El parametro recibido no es un parametro acordado
+					printParamsError(0);
 					ret = EXIT_ERROR;
 				}
-
-			}else if(strcmp(param,"-h")==0 && i+1 < argc){
-				param = (char*)argv[i+1];
-				printf("-h: %s\n", param);
-
-			}else if(strcmp(param,"-a")==0 && i+1 < argc){
-				param = (char*)argv[i+1];
-				printf("-a: %s\n", param);
-
-			}else if(strcmp(param,"-l")==0 && i+1 < argc){
-				//Se asigna el parametro de lease
-				lease = strtol(argv[i+1], &errPtr, 0);
-				//Se comprueba que no haya habido un error de formato
-				if(strlen(errPtr)!=0){
-					printParamsError(2);
-					ret = EXIT_ERROR;
-				}
-
-			}else if(strcmp(param,"-d")==0){
-				//Se activa el modo debug
-				printf("Debug mode [ON]\n");
-				debug = DEBUG_ON;
-
-			}else{
-				//El parametro recibido no es un parametro acordado
-				printParamsError(0);
-				ret = EXIT_ERROR;
 			}
+		}else{
+			ret = EXIT_ERROR;
 		}
 	}else{
 		printParamsError(0);
 		ret = EXIT_ERROR;
 	}
+	return ret;
+}
+
+int checkIFace( char* iface){
+	int ret;
+	ret = true;
+	//TODO comprobar iface
+	printf("%d\n",ret);
 	return ret;
 }
 
