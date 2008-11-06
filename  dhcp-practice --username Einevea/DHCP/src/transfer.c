@@ -25,7 +25,7 @@ int sendDHCPDISCOVER(){
 	dhcpdiscover->hlen = 6;
 	dhcpdiscover->xid = xid;
 	dhcpdiscover->secs = 0; //TODO preguntar al profesor
-	memcpy(dhcpdiscover->chaddr, haddress, dhcpdiscover->hlen); //TODO pillar dirección mac de mi maquina
+	memcpy(dhcpdiscover->chaddr, haddress, dhcpdiscover->hlen);
 	//dhcpdiscover->sname= ""; //TODO mirar options?
 	//dhcpdiscover->file= ""; //TODO mirar options?
 	dhcpdiscover->options= NULL; //TODO mirar options?

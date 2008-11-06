@@ -9,9 +9,8 @@
 #define DHCP_STATE_H_
 #include "constants.h"
 
-int debug;
 char *iface, *hostname, *address, *haddress;
 enum dhcp_states state;
-int exit_value, timeout, lease;
+int exit_value, timeout, lease, debug, haddress_size;
 
 #endif /* DHCP_STATE_H_ */
