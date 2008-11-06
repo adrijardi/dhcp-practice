@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include "f_messages.h"
 #include "constants.h"
+#include "dhcp_state.h"
 
 //METODOS PRIVADOS
 int mdhcp_to_message_size(struct mdhcp_t *str_dhcp);
@@ -197,25 +198,24 @@ void print_mdhcp(struct mdhcp_t *str_dhcp){
 	sname = str_dhcp->sname;
 	file = str_dhcp->file;
 	options = str_dhcp->options;
-	printf("%d-%s\n", sizeof(chaddr), chaddr);
-	xchaddr = StrToHexStr(chaddr,6);
+	xchaddr = StrToHexStr(chaddr,haddress_size);
 	sprintf(cad,"%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%s-%s-%s-%u-%s", op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr, xchaddr, sname, file, opt_length,options);
 	free(xchaddr);
 	printf("---\n%s\n---\n",cad);
 }
 
-char *StrToHexStr(char *str, int leng){
-int i;
-char *newstr = malloc((leng*3)+1);
-char *cpold = str;
-char *cpnew = newstr;
+char* StrToHexStr(char *str, int leng){
+	int i;
+	char *newstr = malloc((leng*2)+1);
+	char *cpold = str;
+	char *cpnew = newstr;
 
-for(i=0; i<leng; i++){
-sprintf(cpnew, "%2X:", (char)(*cpold +i));
-cpnew+=3;
-}
-*(cpnew+(leng*3)+1) = '\0';
-return cpnew;
+	for(i = 0; i < leng; i++){
+		sprintf(cpnew, "%02x",(unsigned char)(*cpold++));
+		cpnew+=2;
+	}
+	*(cpnew) = '\0';
+	return newstr;
 }
 
 void print_message(struct msg_dhcp_t *message) {

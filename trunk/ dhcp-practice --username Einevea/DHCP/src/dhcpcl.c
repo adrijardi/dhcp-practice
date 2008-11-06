@@ -55,7 +55,7 @@ int init(){
 	// Se inicializan los parametros del estado.
 	state = INIT;
 	haddress=NULL;
-
+	haddress_size = 6;
 	// Se espera un numero aleatorio de segundos entre 1 y 10
 	srandom(time(NULL));
 	time_wait((random()%9000)+1000);

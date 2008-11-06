@@ -99,13 +99,13 @@ void obtainHardwareAddress(){
 	int fd;
 	struct ifreq ifr;
 
-	fd = socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL));
+	fd = socket(PF_INET, SOCK_DGRAM,0);
 	strcpy(ifr.ifr_name, iface);
 	ioctl(fd, SIOCGIFHWADDR, &ifr);
 	if(haddress == NULL)
-		haddress = malloc(6);
+		haddress = malloc(haddress_size);
 
-	bzero(haddress, 6);
-	memcpy(haddress,ifr.ifr_hwaddr.sa_data, 6);
+	bzero(haddress, haddress_size);
+	memcpy(haddress,ifr.ifr_hwaddr.sa_data, haddress_size);
 	close(fd);
 }
