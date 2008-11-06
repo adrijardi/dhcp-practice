@@ -6,23 +6,35 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <netinet/in.h>
 #include "f_messages.h"
 #include "constants.h"
+
+//METODOS PRIVADOS
+int mdhcp_to_message_size(struct mdhcp_t *str_dhcp);
+char* StrToHexStr(char *str, int leng);
+
+
+//CODIGO
+int mdhcp_to_message_size(struct mdhcp_t *str_dhcp){
+	int ret;
+	ret = str_dhcp->opt_length + DHCP_BSIZE; //En octetos
+	return ret;
+}
 
 /*
  * Se reserva memoria
  */
 struct msg_dhcp_t* from_mdhcp_to_message(struct mdhcp_t *str_dhcp) {
-	int osize, size, p, iaux;
+	int size, p, iaux;
 	short saux;
 	unsigned char *msg;
 	struct msg_dhcp_t * ret;
 
 	ret = malloc(sizeof(struct msg_dhcp_t));
 
-	osize = str_dhcp->opt_length;
-	size = osize + DHCP_BSIZE; //En octetos
+	size = mdhcp_to_message_size(str_dhcp); //En octetos
 
 	msg = malloc(size);
 	p = 0;
@@ -61,10 +73,37 @@ struct msg_dhcp_t* from_mdhcp_to_message(struct mdhcp_t *str_dhcp) {
 	p += 64;
 	memcpy(msg + p, &str_dhcp->file, 128);
 	p += 128;
-	memcpy(msg + p, str_dhcp->options, osize);
+	memcpy(msg + p, str_dhcp->options, str_dhcp->opt_length);
 
 	ret->length = size;
 	ret->msg = msg;
+
+	return ret;
+}
+
+struct mdhcp_t* new_default_mdhcp(){
+	struct mdhcp_t *ret;
+	int s;
+	ret = malloc(sizeof(struct mdhcp_t));
+	ret->op = 0;
+	ret->htype = 0;
+	ret->hlen = 0;
+	ret->hops = 0;
+	ret->xid = 0;
+	ret->secs = 0;
+	ret->flags = 0;
+	ret->ciaddr = 0;
+	ret->yiaddr = 0;
+	ret->siaddr = 0;
+	ret->giaddr = 0;
+	s = strlen(ret->chaddr);
+	bzero(ret->chaddr, s);
+	s = strlen(ret->sname);
+	bzero(ret->sname, s);
+	s = strlen(ret->file);
+	bzero(ret->file, s);
+	ret->opt_length = 0;
+	ret->options = NULL;
 
 	return ret;
 }
@@ -136,13 +175,12 @@ void free_message(struct msg_dhcp_t *message) {
 	free(message);
 }
 void print_mdhcp(struct mdhcp_t *str_dhcp){
-	char cad[50]; //TODO CAMBIAR
-	unsigned int op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr;
-//	char chaddr[16];
-//	char sname[64];
-//	char file[128];
-//	unsigned int opt_length;
-//	char *options;
+	char *cad, *chaddr, *sname, *file, *options, *xchaddr;
+	unsigned int op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr, opt_length;
+	int size;
+	size = sizeof(struct mdhcp_t)+str_dhcp->opt_length;
+	cad = malloc(size);
+
 	op = (unsigned int) str_dhcp-> op;
 	htype = (unsigned int) str_dhcp-> htype;
 	hlen = (unsigned int) str_dhcp-> hlen;
@@ -154,9 +192,32 @@ void print_mdhcp(struct mdhcp_t *str_dhcp){
 	yiaddr = (unsigned int) str_dhcp-> yiaddr;
 	siaddr = (unsigned int) str_dhcp-> siaddr;
 	giaddr = (unsigned int) str_dhcp-> giaddr;
-	sprintf(cad,"%u %u %u %u %u %u %u %u %u %u %u", op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr);
+	opt_length = (unsigned int) str_dhcp-> opt_length;
+	chaddr = str_dhcp->chaddr;
+	sname = str_dhcp->sname;
+	file = str_dhcp->file;
+	options = str_dhcp->options;
+	printf("%d-%s\n", sizeof(chaddr), chaddr);
+	xchaddr = StrToHexStr(chaddr,6);
+	sprintf(cad,"%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%s-%s-%s-%u-%s", op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr, xchaddr, sname, file, opt_length,options);
+	free(xchaddr);
 	printf("---\n%s\n---\n",cad);
 }
+
+char *StrToHexStr(char *str, int leng){
+int i;
+char *newstr = malloc((leng*3)+1);
+char *cpold = str;
+char *cpnew = newstr;
+
+for(i=0; i<leng; i++){
+sprintf(cpnew, "%2X:", (char)(*cpold +i));
+cpnew+=3;
+}
+*(cpnew+(leng*3)+1) = '\0';
+return cpnew;
+}
+
 void print_message(struct msg_dhcp_t *message) {
 	int i, l;
 	unsigned char *msg = message->msg;

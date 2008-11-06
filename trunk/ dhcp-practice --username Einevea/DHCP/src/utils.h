@@ -8,8 +8,10 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-void logDebug();
-void printError();
-void printStndr();
+#include "constants.h"
+
+void printTrace(int xid, enum dhcp_message state, char* str);
+void time_wait(int microsec);
+void obtainHardwareAddress();
 
 #endif /* UTILS_H_ */
