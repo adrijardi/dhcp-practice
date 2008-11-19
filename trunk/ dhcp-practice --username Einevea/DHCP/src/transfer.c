@@ -40,7 +40,7 @@ int sendDHCPDISCOVER(){
 	//dhcpdiscover->sname= ""; //TODO mirar options?
 	//dhcpdiscover->file= ""; //TODO mirar options?
 	dhcpdiscover->options= NULL; //TODO mirar options?
-
+// Prueba
 	print_mdhcp(dhcpdiscover); //TODO quitar
 
 	// Se extrae el mensaje
