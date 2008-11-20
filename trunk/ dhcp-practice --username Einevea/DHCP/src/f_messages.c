@@ -16,9 +16,8 @@
 int mdhcp_to_message_size(struct mdhcp_t *str_dhcp);
 char* StrToHexStr(char *str, int leng);
 
-
 //CODIGO
-int mdhcp_to_message_size(struct mdhcp_t *str_dhcp){
+int mdhcp_to_message_size(struct mdhcp_t *str_dhcp) {
 	int ret;
 	ret = str_dhcp->opt_length + DHCP_BSIZE; //En octetos
 	return ret;
@@ -82,7 +81,7 @@ struct msg_dhcp_t* from_mdhcp_to_message(struct mdhcp_t *str_dhcp) {
 	return ret;
 }
 
-struct mdhcp_t* new_default_mdhcp(){
+struct mdhcp_t* new_default_mdhcp() {
 	struct mdhcp_t *ret;
 	int s;
 	ret = malloc(sizeof(struct mdhcp_t));
@@ -171,15 +170,16 @@ void free_mdhcp(struct mdhcp_t *str_dhcp) {
 	free(str_dhcp);
 }
 void free_message(struct msg_dhcp_t *message) {
-	if(message->length > 0)
+	if (message->length > 0)
 		free(message->msg);
 	free(message);
 }
-void print_mdhcp(struct mdhcp_t *str_dhcp){
+void print_mdhcp(struct mdhcp_t *str_dhcp) {
 	char *cad, *chaddr, *sname, *file, *options, *xchaddr;
-	unsigned int op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr, opt_length;
+	unsigned int op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr,
+			siaddr, giaddr, opt_length;
 	int size;
-	size = sizeof(struct mdhcp_t)+str_dhcp->opt_length;
+	size = sizeof(struct mdhcp_t) + str_dhcp->opt_length;
 	cad = malloc(size);
 
 	op = (unsigned int) str_dhcp-> op;
@@ -198,21 +198,23 @@ void print_mdhcp(struct mdhcp_t *str_dhcp){
 	sname = str_dhcp->sname;
 	file = str_dhcp->file;
 	options = str_dhcp->options;
-	xchaddr = StrToHexStr(chaddr,haddress_size);
-	sprintf(cad,"%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%s-%s-%s-%u-%s", op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr, xchaddr, sname, file, opt_length,options);
+	xchaddr = StrToHexStr(chaddr, haddress_size);
+	sprintf(cad, "%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%s-%s-%s-%u-%s", op, htype,
+			hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr,
+			xchaddr, sname, file, opt_length, options);
 	free(xchaddr);
-	printf("---\n%s\n---\n",cad);
+	printf("---\n%s\n---\n", cad);
 }
 
-char* StrToHexStr(char *str, int leng){
+char* StrToHexStr(char *str, int leng) {
 	int i;
-	char *newstr = malloc((leng*2)+1);
+	char *newstr = malloc((leng * 2) + 1);
 	char *cpold = str;
 	char *cpnew = newstr;
 
-	for(i = 0; i < leng; i++){
-		sprintf(cpnew, "%02x",(unsigned char)(*cpold++));
-		cpnew+=2;
+	for (i = 0; i < leng; i++) {
+		sprintf(cpnew, "%02x", (unsigned char) (*cpold++));
+		cpnew += 2;
 	}
 	*(cpnew) = '\0';
 	return newstr;
@@ -224,7 +226,30 @@ void print_message(struct msg_dhcp_t *message) {
 	l = message->length;
 	printf("---\n");
 	for (i = 0; i < l; i++) {
-		printf("%c",msg[i]);
+		printf("%c", msg[i]);
 	}
 	printf("---\n");
 }
+
+struct ip_header_t new_default_ipHeader() {
+	struct ip_header_t *ret;
+	ret = malloc(sizeof(struct ip_header_t));
+	ret->ver_ihl = 128 + 5;
+	ret->tos = 0;
+	ret->tLen = 0; //Tamaño total del datagrama
+	ret->id = 0; //Identificador para los fragmentos
+	ret->flags_fragments = 0; //??
+	ret->ttl = 600; //Time to live, 600 por poner algo
+	ret->protocol = 17; //UDP
+	ret->checksum = 0; //CheckSum, digo yo que habrá que ponerlo
+	ret->source_ip = 0;
+	ret->dest_ip =
+	return ret;
+}
+char* from_ipHeader_to_char(struct ip_header_t *ipHeader) {
+
+}
+void free_ipHeader(struct ip_header_t *ipHeader) {
+
+}
+

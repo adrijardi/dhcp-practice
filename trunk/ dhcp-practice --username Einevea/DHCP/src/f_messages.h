@@ -41,6 +41,19 @@ struct msg_dhcp_t{
 	unsigned char * msg;
 };
 
+struct ip_header_t{
+	unsigned char ver_ihl;
+	unsigned char tos;
+	unsigned short tLen;
+	unsigned short id;
+	unsigned short flags_fragments;
+	unsigned char ttl;
+	unsigned char protocol;
+	unsigned short checksum;
+	unsigned int source_ip;
+	unsigned int dest_ip;
+};
+
 struct mdhcp_t* new_default_mdhcp();
 struct msg_dhcp_t* from_mdhcp_to_message(struct mdhcp_t *str_dhcp);
 struct mdhcp_t* from_message_to_mdhcp(struct msg_dhcp_t *message);
@@ -48,5 +61,9 @@ void free_mdhcp(struct mdhcp_t *str_dhcp);
 void free_message(struct msg_dhcp_t *message);
 void print_mdhcp(struct mdhcp_t *str_dhcp);
 void print_message(struct msg_dhcp_t *msg);
+
+struct ip_header_t new_default_ipHeader();
+char* from_ipHeader_to_char(struct ip_header_t *ipHeader);
+void free_ipHeader(struct ip_header_t *ipHeader);
 
 #endif /* F_MESSAGES_H_ */

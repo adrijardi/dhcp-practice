@@ -19,6 +19,7 @@ int sendRAW_Msg(struct msg_dhcp_t *message);
 int sendUDP_Msg(struct msg_dhcp_t *message);
 
 int sendDHCPDISCOVER(){
+	printf("Vamos a petar\n");
 	int ret = EXIT_ERROR;
 	unsigned int xid;
 	double r;
@@ -47,7 +48,7 @@ int sendDHCPDISCOVER(){
 	message = from_mdhcp_to_message(dhcpdiscover);
 	// Se envia el mensaje
 	if(sendMSG(message) == true){
-		state = SELECTING; // TODO se necesita sincronización multihilo?
+		//state = SELECTING; // TODO se necesita sincronización multihilo?
 		ret = EXIT_NORMAL;
 	}else{
 		fprintf(stderr,"ERROR: No se ha podido mandar el mensaje dhcpdiscover.");
@@ -62,7 +63,7 @@ int sendDHCPDISCOVER(){
 int sendMSG(struct msg_dhcp_t *message){
 	int ret = false;
 
-	switch(state){
+	/*switch(state){
 	case INIT:
 	case SELECTING:
 		ret = sendRAW_Msg(message);
@@ -70,7 +71,7 @@ int sendMSG(struct msg_dhcp_t *message){
 	default:
 		ret = sendUDP_Msg(message);
 		break;
-	}
+	}*/
 
 	return ret;
 }
