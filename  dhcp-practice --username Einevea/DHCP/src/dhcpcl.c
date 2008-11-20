@@ -22,7 +22,11 @@ int checkParams(int argc, const char* argv[]);
 void pruebas();
 int checkIFace(char* iface);
 void getFileParams();
+int initialize();
 int init();
+int selecting();
+int requesting();
+int bound();
 void clean_close();
 void run();
 
@@ -37,10 +41,11 @@ int main(int argc, const char* argv[]) {
 	debug = DEBUG_OFF;
 	no_exit = true;
 	exit_value = checkParams(argc, argv);
-	pruebas();//TODO quitar
+	//pruebas();//TODO quitar
 	if (exit_value == 0) {
 		printTrace(0, PID, NULL);
 		getFileParams();
+		initialize();
 		run();
 		clean_close();
 	}
@@ -48,43 +53,87 @@ int main(int argc, const char* argv[]) {
 }
 
 void run() {
-	int result;
-	fd_set readset;
-	int numSockets;
-	struct timeval tv;
-	printf("iniciando bucle\n");
-	numSockets = 0;
-	tv.tv_sec = 1000; //Timeout
-	FD_ZERO(&readset);
-	/*para cada socket
+	int isbound = 0;
+	while (!isbound) {
+		if (init()) {
+			if (selecting()) {
+				isbound = requesting();
+			} else {
+				//TODO
+				printf("Error 1\n");
+				exit(-1);
+			}
+		} else {
+			//TODO
+			printf("Error 2\n");
+			exit(-1);
+		}
+	}
+	bound();
+	/*int result;
+	 fd_set readset;
+	 int numSockets;
+	 struct timeval tv;
+	 printf("iniciando bucle\n");
+	 numSockets = 0;
+	 tv.tv_sec = 1000; //Timeout
+	 FD_ZERO(&readset);
+	 /*para cada socket
 	 * numSokets++;
 	 * int serverSocket = tal tal;
 	 * FD_SET(serverSocket, &readset);
 	 *
 	 */
-	while (no_exit) {
-		result = select(numSockets +1, &readset, NULL, NULL, &tv);
-		printf("salida select\n");
-		no_exit = false;
-	}
+	/*while (no_exit) {
+	 result = select(numSockets +1, &readset, NULL, NULL, &tv);
+	 printf("salida select\n");
+	 no_exit = false;
+	 }*/
+}
+
+int init() {
+	printf("En init\n");
+	// Se espera un numero aleatorio de segundos entre 1 y 10
+	srandom(time(NULL));
+	time_wait((random() % 9000) + 1000);
+	//Posible bucle de reenvio
+	return sendDHCPDISCOVER();
+}
+
+int selecting() {
+	printf("En selecting\n");
+	//Recivimos multiples respuestas
+	//Elegimos ip
+	//Enviamos DHCPrequest
+	return true;
+}
+
+int requesting() {
+	printf("En requesting\n");
+	//Escuchamos lo que venga
+	//Enviamos dhcpAck dhcpNAck
+	//Si falta algo mas tambien lo hacemos
+	return true;
+}
+
+int bound() {
+	printf("En bound\n");
+	//Temporizador de leasetime
+	//escuchar señales
+	//Si recive señal se envia DHCPRELEASE ??
+	return true;
 }
 
 void clean_close() {
 	free(haddress);
 }
 
-int init() {
+int initialize() {
 	// Se inicializan los parametros del estado.
 	state = INIT;
 	haddress = NULL;
 	haddress_size = 6;
-	// Se espera un numero aleatorio de segundos entre 1 y 10
-	srandom(time(NULL));
-	time_wait((random() % 9000) + 1000);
-	//Se van a necesitar varios hilos a partir de este punto, envio de tramas y recepción de tramas bloqueantes.
-	//sendMessage();
 	obtainHardwareAddress();
-	sendDHCPDISCOVER();
 	return EXIT_NORMAL; //TODO
 }
 
