@@ -8,6 +8,8 @@
 #include <string.h>
 #include <strings.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include "f_messages.h"
 #include "constants.h"
 #include "dhcp_state.h"
@@ -231,25 +233,87 @@ void print_message(struct msg_dhcp_t *message) {
 	printf("---\n");
 }
 
-struct ip_header_t new_default_ipHeader() {
+struct ip_header_t* new_default_ipHeader() {
 	struct ip_header_t *ret;
 	ret = malloc(sizeof(struct ip_header_t));
+	ret->source_ip = malloc(sizeof(struct in_addr));
+	ret->dest_ip = malloc(sizeof(struct in_addr));
 	ret->ver_ihl = 128 + 5;
 	ret->tos = 0;
 	ret->tLen = 0; //Tamaño total del datagrama
 	ret->id = 0; //Identificador para los fragmentos
 	ret->flags_fragments = 0; //??
-	ret->ttl = 600; //Time to live, 600 por poner algo
+	ret->ttl = 50; //Time to live, 50 por poner algo
 	ret->protocol = 17; //UDP
 	ret->checksum = 0; //CheckSum, digo yo que habrá que ponerlo
-	ret->source_ip = 0;
-	ret->dest_ip =
+	inet_aton("0.0.0.0", ret->source_ip);
+	inet_aton("255.255.255.255", ret->dest_ip);
 	return ret;
 }
-char* from_ipHeader_to_char(struct ip_header_t *ipHeader) {
-
+int from_ipHeader_to_char(char* msg, struct ip_header_t *ipHeader) {
+	// TODO
+	return NULL;
 }
 void free_ipHeader(struct ip_header_t *ipHeader) {
+	//TODO
 
+}
+
+struct udp_header_t* new_default_udpHeader() {
+	struct udp_header_t *ret;
+	ret = malloc(sizeof(struct udp_header_t));
+	ret->source = CLIENT_PORT;
+	ret->dest = SERVER_PORT;
+	ret->len = 8; //Valor mínimo, hay que incluir el dhcp
+	ret->checksum = 0;
+	return ret;
+}
+
+int from_udpHeader_to_char(char* msg, struct udp_header_t *ipHeader) {
+	//TODO
+	return NULL;
+}
+
+void free_udpHeader(struct udp_header_t *ipHeader) {
+	//TODO
+}
+
+/*
+ * Obtiene el mensaje en formato char* a partir de las cabeceras
+ * Establece los valores de tamaño de las cabeceras
+ *
+ */
+int set_udpLenght(char* message, struct ip_header_t* ipHeader,
+		struct udp_header_t* udpHeader, struct mdhcp_t* dhcpStruct) {
+	int totalSize;
+	int messagePos;
+	char* tempString;
+	struct msg_dhcp_t* dhcpMessage;
+	int tempSize;
+
+	udpHeader->len = dhcpMessage->opt_length + 8;
+	// Es posible que haya que meter padding en función del tamaño udp.
+	totalSize = udpHeader->len + 20;
+	ipHeader-> tLen = totalSize;
+
+	message = malloc(totalSize);
+
+	// ¿Comprobar tamaños? por si ha petado
+	tempSize = from_ipHeader_to_char(tempString, ipHeader);
+	memcpy(message, tempString, tempSize);
+	messagePos = tempSize;
+	free(tempString);
+
+	tempSize = from_udpHeader_to_char(tempString, udpHeader);
+	memcpy(message + messagePos, tempString, tempSize);
+	messagePos += tempSize;
+	free(tempString);
+
+	dhcpMessage = from_mdhcp_to_message(dhcpStruct);
+	tempSize = dhcpMessage->length;
+	memcpy(message + messagePos, dhcpMessage->msg, tempSize);
+	free_message(dhcpMessage);
+
+	return -1;
 }
 
