@@ -250,13 +250,42 @@ struct ip_header_t* new_default_ipHeader() {
 	inet_aton("255.255.255.255", ret->dest_ip);
 	return ret;
 }
-int from_ipHeader_to_char(char* msg, struct ip_header_t *ipHeader) {
-	// TODO
-	return NULL;
+int from_ipHeader_to_char(unsigned char* msg, struct ip_header_t *ipHeader) {
+	int p;
+	unsigned int iaux;
+	msg = malloc(20); // Seguro??
+
+	p = 0;
+	memcpy(msg, &ipHeader->ver_ihl, 1);
+	p += 1;
+	memcpy(msg + p, &ipHeader->tos, 1);
+	p += 1;
+	memcpy(msg + p, &ipHeader->tLen, 2);
+	p += 2;
+	memcpy(msg + p, &ipHeader->id, 2);
+	p += 2;
+	memcpy(msg + p, &ipHeader->flags_fragments, 2);
+	p += 2;
+	memcpy(msg + p, &ipHeader->ttl, 1);
+	p += 1;
+	memcpy(msg + p, &ipHeader->protocol, 1);
+	p += 1;
+	memcpy(msg + p, &ipHeader->checksum, 2);
+	p += 2;
+
+	// Apuesto un brazo a que ahi a los enteros les estoy metiendo el valor del puntero.
+	iaux = inet_lnaof(*ipHeader->source_ip); //Posible inet_netof
+	memcpy(msg + p, &iaux, 4);
+	p += 2;
+	iaux = inet_lnaof(*ipHeader->dest_ip);
+	memcpy(msg + p, &iaux, 4);
+
+	return 20;
 }
 void free_ipHeader(struct ip_header_t *ipHeader) {
-	//TODO
-
+	free(ipHeader->source_ip);
+	free(ipHeader->dest_ip);
+	free(ipHeader);
 }
 
 struct udp_header_t* new_default_udpHeader() {
@@ -269,13 +298,24 @@ struct udp_header_t* new_default_udpHeader() {
 	return ret;
 }
 
-int from_udpHeader_to_char(char* msg, struct udp_header_t *ipHeader) {
-	//TODO
-	return NULL;
+int from_udpHeader_to_char(unsigned char* msg, struct udp_header_t *udpHeader) {
+	int p;
+	msg = malloc(8); // Seguro??
+
+	p = 0;
+	memcpy(msg, &udpHeader->source, 2);
+	p += 2;
+	memcpy(msg + p, &udpHeader->dest, 2);
+	p += 2;
+	memcpy(msg + p, &udpHeader->len, 2);
+	p += 2;
+	memcpy(msg + p, &udpHeader->checksum, 2);
+
+	return 8;
 }
 
 void free_udpHeader(struct udp_header_t *ipHeader) {
-	//TODO
+	free(ipHeader);
 }
 
 /*
@@ -283,15 +323,17 @@ void free_udpHeader(struct udp_header_t *ipHeader) {
  * Establece los valores de tamaño de las cabeceras
  *
  */
-int set_udpLenght(char* message, struct ip_header_t* ipHeader,
+int getRawMessage(unsigned char* message, struct ip_header_t* ipHeader,
 		struct udp_header_t* udpHeader, struct mdhcp_t* dhcpStruct) {
 	int totalSize;
 	int messagePos;
-	char* tempString;
+	unsigned char* tempString;
 	struct msg_dhcp_t* dhcpMessage;
-	int tempSize;
+	unsigned int tempSize;
 
-	udpHeader->len = dhcpMessage->opt_length + 8;
+printf("En getRawMessage\n");
+
+	udpHeader->len = dhcpStruct->opt_length + 8;
 	// Es posible que haya que meter padding en función del tamaño udp.
 	totalSize = udpHeader->len + 20;
 	ipHeader-> tLen = totalSize;
@@ -300,20 +342,23 @@ int set_udpLenght(char* message, struct ip_header_t* ipHeader,
 
 	// ¿Comprobar tamaños? por si ha petado
 	tempSize = from_ipHeader_to_char(tempString, ipHeader);
+printf("Creado msg ip\n");
 	memcpy(message, tempString, tempSize);
 	messagePos = tempSize;
 	free(tempString);
-
+printf("Copiado ip\n");
 	tempSize = from_udpHeader_to_char(tempString, udpHeader);
+printf("Creado msg udp\n");
 	memcpy(message + messagePos, tempString, tempSize);
 	messagePos += tempSize;
 	free(tempString);
-
+printf("Copiado udp\n");
 	dhcpMessage = from_mdhcp_to_message(dhcpStruct);
+printf("Creado msg dhcp\n");
 	tempSize = dhcpMessage->length;
 	memcpy(message + messagePos, dhcpMessage->msg, tempSize);
 	free_message(dhcpMessage);
-
-	return -1;
+printf("Copiado dhcp\n");
+	return totalSize;
 }
 
