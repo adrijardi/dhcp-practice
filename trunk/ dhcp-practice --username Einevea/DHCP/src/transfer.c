@@ -15,8 +15,8 @@
 
 //Metodos internos
 int sendMSG(struct msg_dhcp_t *message);
-int sendRAW_Msg(struct msg_dhcp_t *message);
-int sendUDP_Msg(struct msg_dhcp_t *message);
+int sendRAW_Msg(struct mdhcp_t*);
+int sendUDP_Msg(struct mdhcp_t*);
 
 int sendDHCPDISCOVER(){
 	printf("Vamos a petar\n");
@@ -24,7 +24,6 @@ int sendDHCPDISCOVER(){
 	unsigned int xid;
 	double r;
 	struct mdhcp_t* dhcpdiscover;
-	struct msg_dhcp_t* message;
 
 	// Se genera un xid aleatorio
 	r = (double)random()/(double)RAND_MAX;
@@ -44,17 +43,15 @@ int sendDHCPDISCOVER(){
 // Prueba
 	print_mdhcp(dhcpdiscover); //TODO quitar
 
-	// Se extrae el mensaje
-	message = from_mdhcp_to_message(dhcpdiscover);
 	// Se envia el mensaje
-	if(sendMSG(message) == true){
+	if(sendRAW_Msg(dhcpdiscover) == true){
 		//state = SELECTING; // TODO se necesita sincronización multihilo?
-		ret = EXIT_NORMAL;
+		ret = true;
+		printf("guay\n");
 	}else{
-		fprintf(stderr,"ERROR: No se ha podido mandar el mensaje dhcpdiscover.");
+		fprintf(stderr,"ERROR: No se ha podido mandar el mensaje dhcpdiscover.\n");
 	}
 
-	free_message(message);
 	free_mdhcp(dhcpdiscover);
 	return ret;
 }
@@ -76,10 +73,24 @@ int sendMSG(struct msg_dhcp_t *message){
 	return ret;
 }
 
-int sendRAW_Msg(struct msg_dhcp_t *message){
-	return true;
+int sendRAW_Msg(struct mdhcp_t *dhcpStuct){
+	struct ip_header_t* ipHeader;
+	struct udp_header_t* udpHeader;
+	unsigned char* msg;
+	int size;
+
+	ipHeader = new_default_ipHeader();
+	udpHeader = new_default_udpHeader();
+
+	size = getRawMessage(msg, ipHeader, udpHeader, dhcpStuct);
+
+	printf("El tamaño del pakete es %d", size);
+
+	// TODO enviar la mierda esa
+
+	return true; // TODO devolver lo que tenga que ser
 }
-int sendUDP_Msg(struct msg_dhcp_t *message){
+int sendUDP_Msg(struct mdhcp_t *message){
 	return true;
 }
 
