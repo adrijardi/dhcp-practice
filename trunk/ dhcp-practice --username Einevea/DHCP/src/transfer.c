@@ -8,6 +8,8 @@
 #include <limits.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include "constants.h"
 #include "dhcp_state.h"
@@ -86,7 +88,12 @@ int sendRAW_Msg(struct mdhcp_t *dhcpStuct){
 
 	printf("El tamaño del pakete es %d", size);
 
-	// TODO enviar la mierda esa
+	int sock = socket (PF_INET, SOCK_RAW, IPPROTO_TCP);
+	sendto(sock,
+			msg,
+			size,
+			0, //Routing flags
+			(struct sockaddr) &sin);
 
 	return true; // TODO devolver lo que tenga que ser
 }
