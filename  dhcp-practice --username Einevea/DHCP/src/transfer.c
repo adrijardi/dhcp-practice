@@ -10,8 +10,13 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <linux/if_ether.h>
+#include <net/ethernet.h>
+#include <netpacket/packet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
 
 #include "constants.h"
 #include "dhcp_state.h"
@@ -19,8 +24,8 @@
 
 //Metodos internos
 int sendMSG(struct msg_dhcp_t *message);
-int sendRAW_Msg(struct mdhcp_t*);
-int sendUDP_Msg(struct mdhcp_t*);
+int sendETH_Msg(struct mdhcp_t*, in_addr_t address);
+int sendUDP_Msg(struct mdhcp_t*, in_addr_t address );
 
 int sendDHCPDISCOVER(){
 	printf("Vamos a petar\n");
@@ -47,8 +52,8 @@ int sendDHCPDISCOVER(){
 // Prueba
 	print_mdhcp(dhcpdiscover); //TODO quitar
 
-	// Se envia el mensaje
-	if(sendRAW_Msg(dhcpdiscover) == true){
+	// Se envia el mensaje dhcp discover a broadcast
+	if(sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) == true){
 		//state = SELECTING; // TODO se necesita sincronización multihilo?
 		ret = true;
 		printf("guay\n");
@@ -77,48 +82,48 @@ int sendMSG(struct msg_dhcp_t *message){
 	return ret;
 }
 
-int sendRAW_Msg(struct mdhcp_t *dhcpStuct){
+int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 	struct ip_header_t* ipHeader;
 	struct udp_header_t* udpHeader;
+	struct sockaddr_in	addr; // Direccion de envio
 	unsigned char* msg;
-	int size;
-	struct sockaddr_in dest;
-	int sock;
-	int enviado;
-	char algo[5];
-	strcpy(algo, "hola");
+	size_t size;
+	int ret, sock, enviado;
+	ret = 0;
 
+	// Creamos el socket
+	sock = socket (PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
+	if(sock == -1){
+		perror("socket");
+		ret = -1;
+	}
+
+	// Definimos parametros de configuracion para el envio
+	///Se inicia la direccion de destino
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = address;
+	addr.sin_port = htons(SERVER_PORT);
+
+	/// Definimos el mensaje, inclusion de cabeceras...
 	ipHeader = new_default_ipHeader();
 	udpHeader = new_default_udpHeader();
-
 	size = getRawMessage(msg, ipHeader, udpHeader, dhcpStuct);
-
 	printf("El tamaño del pakete es %d\n", size);
 
-	//dest = malloc(sizeof(struct sock_addr_in));
-	dest.sin_family = PF_PACKET;
-	//dest.sin_addr.s_addr = inet_addr("255.255.255.255");
-	if(inet_aton("163.117.83.28", &dest.sin_addr) == 0){
-		fprintf(stderr, "inet_aton() failed\n");
-		exit(1);
+
+	// Se realiza el envio
+	enviado = sendto(sock, msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_in));
+	if(enviado == -1){
+		perror("sendto");
+		ret = -1;
 	}
-	dest.sin_port = htons(SERVER_PORT);
-
-	sock = socket (PF_PACKET, SOCK_DGRAM, 0);
-	printf("socket: %d\n",sock);
-	enviado = sendto(sock,
-			algo,
-			5,
-			0, //Routing flags
-			(struct sockaddr*) &dest,
-			sizeof(struct sockaddr));
-
-
 	printf("Enviado %d\n", enviado);
 
-	return true; // TODO devolver lo que tenga que ser
+	return ret;
 }
-int sendUDP_Msg(struct mdhcp_t *message){
+
+
+int sendUDP_Msg(struct mdhcp_t *message, in_addr_t address ){
 	return true;
 }
 
