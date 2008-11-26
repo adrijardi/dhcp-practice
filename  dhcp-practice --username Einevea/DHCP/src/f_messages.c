@@ -246,7 +246,7 @@ struct ip_header_t* new_default_ipHeader() {
 	ret->ttl = 50; //Time to live, 50 por poner algo
 	ret->protocol = 17; //UDP
 	ret->checksum = 0; //CheckSum, digo yo que habrá que ponerlo
-	inet_aton("0.0.0.0", ret->source_ip);
+	inet_aton("0.0.0.0", ret->source_ip); // TODO revisar
 	inet_aton("255.255.255.255", ret->dest_ip);
 	return ret;
 }
