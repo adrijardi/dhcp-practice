@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "constants.h"
 #include "dhcp_state.h"
@@ -80,20 +82,39 @@ int sendRAW_Msg(struct mdhcp_t *dhcpStuct){
 	struct udp_header_t* udpHeader;
 	unsigned char* msg;
 	int size;
+	struct sockaddr_in dest;
+	int sock;
+	int enviado;
+	char algo[5];
+	strcpy(algo, "hola");
 
 	ipHeader = new_default_ipHeader();
 	udpHeader = new_default_udpHeader();
 
 	size = getRawMessage(msg, ipHeader, udpHeader, dhcpStuct);
 
-	printf("El tamaño del pakete es %d", size);
+	printf("El tamaño del pakete es %d\n", size);
 
-	int sock = socket (PF_INET, SOCK_RAW, IPPROTO_TCP);
-	sendto(sock,
-			msg,
-			size,
+	//dest = malloc(sizeof(struct sock_addr_in));
+	dest.sin_family = PF_PACKET;
+	//dest.sin_addr.s_addr = inet_addr("255.255.255.255");
+	if(inet_aton("163.117.83.28", &dest.sin_addr) == 0){
+		fprintf(stderr, "inet_aton() failed\n");
+		exit(1);
+	}
+	dest.sin_port = htons(SERVER_PORT);
+
+	sock = socket (PF_PACKET, SOCK_DGRAM, 0);
+	printf("socket: %d\n",sock);
+	enviado = sendto(sock,
+			algo,
+			5,
 			0, //Routing flags
-			(struct sockaddr) &sin);
+			(struct sockaddr*) &dest,
+			sizeof(struct sockaddr));
+
+
+	printf("Enviado %d\n", enviado);
 
 	return true; // TODO devolver lo que tenga que ser
 }
