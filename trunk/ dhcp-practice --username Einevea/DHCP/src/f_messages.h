@@ -41,26 +41,6 @@ struct msg_dhcp_t{
 	unsigned char * msg;
 };
 
-struct ip_header_t{
-	unsigned char ver_ihl;
-	unsigned char tos;
-	unsigned short tLen;
-	unsigned short id;
-	unsigned short flags_fragments;
-	unsigned char ttl;
-	unsigned char protocol;
-	unsigned short checksum;
-	struct in_addr* source_ip;
-	struct in_addr* dest_ip;
-};
-
-struct udp_header_t{
-	unsigned short source;
-	unsigned short dest;
-	unsigned short len;
-	unsigned short checksum;
-};
-
 struct mdhcp_t* new_default_mdhcp();
 struct msg_dhcp_t* from_mdhcp_to_message(struct mdhcp_t *str_dhcp);
 struct mdhcp_t* from_message_to_mdhcp(struct msg_dhcp_t *message);
@@ -69,14 +49,7 @@ void free_message(struct msg_dhcp_t *message);
 void print_mdhcp(struct mdhcp_t *str_dhcp);
 void print_message(struct msg_dhcp_t *msg);
 
-struct ip_header_t* new_default_ipHeader();
-int from_ipHeader_to_char(unsigned char**, struct ip_header_t *ipHeader);
-void free_ipHeader(struct ip_header_t *ipHeader);
-
-struct udp_header_t* new_default_udpHeader();
-int from_udpHeader_to_char(unsigned char**, struct udp_header_t *ipHeader);
-void free_udpHeader(struct udp_header_t *ipHeader);
-
-int getRawMessage(unsigned char*, struct ip_header_t*, struct udp_header_t*, struct mdhcp_t*);
+int getETHMessage(unsigned char*, in_addr_t hostname, struct mdhcp_t*);
+//Falta la inversa
 
 #endif /* F_MESSAGES_H_ */

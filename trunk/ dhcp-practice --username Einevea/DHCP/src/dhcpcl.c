@@ -70,25 +70,6 @@ void run() {
 		}
 	}
 	bound();
-	/*int result;
-	 fd_set readset;
-	 int numSockets;
-	 struct timeval tv;
-	 printf("iniciando bucle\n");
-	 numSockets = 0;
-	 tv.tv_sec = 1000; //Timeout
-	 FD_ZERO(&readset);
-	 /*para cada socket
-	 * numSokets++;
-	 * int serverSocket = tal tal;
-	 * FD_SET(serverSocket, &readset);
-	 *
-	 */
-	/*while (no_exit) {
-	 result = select(numSockets +1, &readset, NULL, NULL, &tv);
-	 printf("salida select\n");
-	 no_exit = false;
-	 }*/
 }
 
 int init() {
