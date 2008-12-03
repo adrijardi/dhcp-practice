@@ -7,7 +7,6 @@
 
 #ifndef F_MESSAGES_H_
 #define F_MESSAGES_H_
-
 // Tamanyo base de dhcp
 #define DHCP_BSIZE 236;
 // Valores de las variables de un mensaje dhcp
@@ -16,6 +15,17 @@
 
 #define DHCP_FLAGS_NO_BROADCAST 0;
 #define DHCP_FLAGS_BROADCAST 32768;
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
 
 struct mdhcp_t{
 	unsigned char op;
@@ -49,7 +59,6 @@ void free_message(struct msg_dhcp_t *message);
 void print_mdhcp(struct mdhcp_t *str_dhcp);
 void print_message(struct msg_dhcp_t *msg);
 
-int getETHMessage(unsigned char*, in_addr_t hostname, struct mdhcp_t*);
-//Falta la inversa
+int getETHMessage(unsigned char** , in_addr_t , struct mdhcp_t* );
 
 #endif /* F_MESSAGES_H_ */

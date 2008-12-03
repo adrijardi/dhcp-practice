@@ -83,10 +83,8 @@ int sendMSG(struct msg_dhcp_t *message){
 }
 
 int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
-	struct ip_header_t* ipHeader;
-	struct udp_header_t* udpHeader;
 	struct sockaddr_in	addr; // Direccion de envio
-	unsigned char* msg;
+	unsigned char** msg;
 	size_t size;
 	int ret, sock, enviado;
 	ret = 0;
@@ -105,9 +103,8 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 	addr.sin_port = htons(SERVER_PORT);
 
 	/// Definimos el mensaje, inclusion de cabeceras...
-	ipHeader = new_default_ipHeader();
-	udpHeader = new_default_udpHeader();
-	size = getRawMessage(msg, ipHeader, udpHeader, dhcpStuct);
+	msg = malloc(4);
+	size = getETHMessage(msg, address, dhcpStuct);
 	printf("El tamaño del pakete es %d\n", size);
 
 
