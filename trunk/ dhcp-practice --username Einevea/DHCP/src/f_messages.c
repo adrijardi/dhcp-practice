@@ -4,14 +4,6 @@
  *  Created on: 21-oct-2008
  *      Author: dconde
  */
-#include <stdio.h>
-#include <string.h>
-#include <strings.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
 
 #include "f_messages.h"
 #include "constants.h"
@@ -20,15 +12,9 @@
 //METODOS PRIVADOS
 char* StrToHexStr(char *str, int leng);
 
-int mdhcp_to_message_size(struct mdhcp_t *);
-int from_ipHeader_to_char(unsigned char**, struct iphdr *);
-int from_udpHeader_to_char(unsigned char**, struct udphdr *);
-unsigned short in_cksum(unsigned short *ptr, int nbytes)
-void free_ipHeader(struct iphdr *);
-void free_udpHeader(struct udphdr *);
-
-struct iphdr* new_default_ipHeader(in_addr_t hostname);
-struct udphdr* new_default_udpHeader();
+int get_UDPhdr(unsigned char **, struct msg_dhcp_t*);
+int get_IPhdr(unsigned char **, in_addr_t, unsigned char *, int);
+unsigned short in_cksum(unsigned short *ptr, int nbytes);
 
 //CODIGO
 int mdhcp_to_message_size(struct mdhcp_t *str_dhcp) {
@@ -245,31 +231,109 @@ void print_message(struct msg_dhcp_t *message) {
 	printf("---\n");
 }
 
-int new_default_ipDatagram(unsigned char ** ipmsg, in_addr_t hostname, unsigned char * msg, int msgSize) {
-	unsigned char * ret;
+/*
+ * Obtiene el mensaje en formato char* a partir de las cabeceras
+ * Establece los valores de tamaño de las cabeceras
+ */
+int getETHMessage(unsigned char** msg, in_addr_t hostname, struct mdhcp_t* mdhcp) {
+	int total_size;
+	struct msg_dhcp_t* dhcp_msg;
+	unsigned char** udp_msg;
+
+	udp_msg = malloc(4);
+
+	total_size = 0;
+	dhcp_msg = from_mdhcp_to_message(mdhcp);
+	total_size = get_UDPhdr(udp_msg, dhcp_msg);
+	total_size = get_IPhdr(msg, hostname,*udp_msg, total_size);
+	free(*udp_msg);
+	free(udp_msg);
+	return total_size;
+}
+
+int get_UDPhdr(unsigned char ** msg, struct msg_dhcp_t* dhcp_msg){
+	int size, p;
+	u_int16_t saux;
+	struct udphdr *udph;
+
+	size = 8 + dhcp_msg->length;
+	*msg = malloc(size);
+	udph = malloc(sizeof(struct udphdr));
+	udph->source = CLIENT_PORT;
+	udph->dest = SERVER_PORT;
+	udph->len = size;
+	udph->check = 0;
+
+	p = 0;
+	saux = htons(udph->source);
+	memcpy(*msg, &saux, 2);
+	p += 2;
+	saux = htons(udph->dest);
+	memcpy(*msg + p, &saux, 2);
+	p += 2;
+	saux = htons(udph->len);
+	memcpy(*msg + p, &saux, 2);
+	p += 2;
+	saux = htons(udph->check);
+	memcpy(*msg + p, &saux, 2);
+	p += 2;
+	memcpy(*msg + p, dhcp_msg->msg, dhcp_msg->length);
+
+	free(udph);
+
+	return size;
+}
+
+
+int get_IPhdr(unsigned char ** msg, in_addr_t hostname, unsigned char * udp_msg, int udp_size){
+	int size, p;
+	u_int8_t caux;
 	struct iphdr *iph;
-	int tot_len;
 
-	tot_len = sizeof(struct iphdr) + msgSize +1
-
+	size = 20 + udp_size;
+	*msg = malloc(size);
 	iph = malloc(sizeof(struct iphdr));
 	iph->version = htons(4);
 	iph->ihl = htons(5);
 	iph->tos = 0;
-	iph->tot_len = htons(tot_len);
+	iph->tot_len = htons(size);
 	iph->id = htons(getuid());
 	iph->ttl = 255;
 	iph->frag_off = 0;
 	iph->protocol = htons(IPPROTO_UDP);
-	iph->saddr = 0
+	iph->saddr = 0;
 	iph->daddr = htons(hostname);
 	iph->check = htons(in_cksum((unsigned short *)iph, sizeof(struct iphdr)));
 
-	ret = malloc(tot_len);
 
-	from_ipHeader_to_char(unsigned char** msg, struct iphdr *ipHeader) {
+	p = 0;
+	caux = iph->version;
+	caux = caux << 4;
+	caux += iph->ihl;
+	memcpy(*msg, &caux, 1);
+	p += 1;
+	memcpy(*msg + p, &iph->tos, 1);
+	p += 1;
+	memcpy(*msg + p, &iph->tot_len, 2);
+	p += 2;
+	memcpy(*msg + p, &iph->id, 2);
+	p += 2;
+	memcpy(*msg + p, &iph->frag_off, 2);
+	p += 2;
+	memcpy(*msg + p, &iph->ttl, 1);
+	p += 1;
+	memcpy(*msg + p, &iph->protocol, 1);
+	p += 1;
+	memcpy(*msg + p, &iph->check, 2);
+	p += 2;
+	memcpy(*msg + p, &iph->saddr, 4);
+	p += 4;
+	memcpy(*msg + p, &iph->daddr, 4);
+	p += 4;
 
-	return ret;
+	free(iph);
+
+	return size;
 }
 
 unsigned short in_cksum(unsigned short *ptr, int nbytes){
@@ -294,121 +358,5 @@ unsigned short in_cksum(unsigned short *ptr, int nbytes){
 	answer = ~sum;
 
 	return answer;
-}
-
-
-int from_ipHeader_to_char(unsigned char** msg, struct iphdr *ipHeader) {
-	int p;
-	unsigned int iaux;
-	*msg = malloc(20); // Seguro??
-
-	p = 0;
-	memcpy(*msg, &ipHeader->ver_ihl, 1);
-	p += 1;
-	memcpy(*msg + p, &ipHeader->tos, 1);
-	p += 1;
-	memcpy(*msg + p, &ipHeader->tLen, 2);
-	p += 2;
-	memcpy(*msg + p, &ipHeader->id, 2);
-	p += 2;
-	memcpy(*msg + p, &ipHeader->flags_fragments, 2);
-	p += 2;
-	memcpy(*msg + p, &ipHeader->ttl, 1);
-	p += 1;
-	memcpy(*msg + p, &ipHeader->protocol, 1);
-	p += 1;
-	memcpy(*msg + p, &ipHeader->checksum, 2);
-	p += 2;
-
-	// Apuesto un brazo a que ahi a los enteros les estoy metiendo el valor del puntero.
-	iaux = inet_lnaof(*ipHeader->source_ip); //Posible inet_netof
-	memcpy(*msg + p, &iaux, 4);
-	p += 2;
-	iaux = inet_lnaof(*ipHeader->dest_ip);
-	memcpy(*msg + p, &iaux, 4);
-
-	return 20;
-}
-void free_ipHeader(struct iphdr  *ipHeader) {
-	free(ipHeader->source_ip);
-	free(ipHeader->dest_ip);
-	free(ipHeader);
-}
-
-struct udphdr* new_default_udpHeader() {
-	struct udp_header_t *ret;
-	ret = malloc(sizeof(struct udp_header_t));
-	ret->source = CLIENT_PORT;
-	ret->dest = SERVER_PORT;
-	ret->len = 8; //Valor mínimo, hay que incluir el dhcp
-	ret->checksum = 0;
-	return ret;
-}
-
-int from_udpHeader_to_char(unsigned char** msg, struct udphdr *udpHeader) {
-	int p;
-	*msg = malloc(8); // Seguro??
-
-	p = 0;
-	memcpy(*msg, &udpHeader->source, 2);
-	p += 2;
-	memcpy(*msg + p, &udpHeader->dest, 2);
-	p += 2;
-	memcpy(*msg + p, &udpHeader->len, 2);
-	p += 2;
-	memcpy(*msg + p, &udpHeader->checksum, 2);
-
-	return 8;
-}
-
-void free_udpHeader(struct udphdr *udpHeader) {
-	free(udpHeader);
-}
-
-/*
- * Obtiene el mensaje en formato char* a partir de las cabeceras
- * Establece los valores de tamaño de las cabeceras
- *
- */
-int getETHMessage(unsigned char*, in_addr_t hostname, struct mdhcp_t*) {
-
-
-//	int totalSize;
-//	int messagePos;
-//	unsigned char** tempString;
-//	struct msg_dhcp_t* dhcpMessage;
-//	unsigned int tempSize;
-//
-//printf("En getRawMessage\n");
-//
-//	udpHeader->len = dhcpStruct->opt_length + 8 +40;
-//	// Es posible que haya que meter padding en función del tamaño udp.
-//	totalSize = udpHeader->len + 20;
-//	ipHeader-> tLen = totalSize;
-//
-//	message = malloc(totalSize);
-//	tempString = malloc(4);
-//
-//	// ¿Comprobar tamaños? por si ha petado
-//	tempSize = from_ipHeader_to_char(tempString, ipHeader);
-//printf("Creado msg ip\n");
-//	memcpy(message, tempString, tempSize);
-//	messagePos = tempSize;
-//	free(tempString);
-//printf("Copiado ip\n");
-//	tempString = malloc(4);
-//	tempSize = from_udpHeader_to_char(tempString, udpHeader);
-//printf("Creado msg udp\n");
-//	memcpy(message + messagePos, tempString, tempSize);
-//	messagePos += tempSize;
-//	free(tempString);
-//printf("Copiado udp\n");
-//	dhcpMessage = from_mdhcp_to_message(dhcpStruct);
-//printf("Creado msg dhcp\n");
-//	tempSize = dhcpMessage->length + 40;
-//	memcpy(message + messagePos, dhcpMessage->msg, tempSize);
-//	//free_message(dhcpMessage); TODO peta a saber por que, arreglar
-//printf("Copiado dhcp\n");
-	return totalSize;
 }
 
