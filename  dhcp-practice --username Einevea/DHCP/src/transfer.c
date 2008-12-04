@@ -34,6 +34,8 @@ int sendDHCPDISCOVER(){
 	unsigned int xid;
 	double r;
 	struct mdhcp_t* dhcpdiscover;
+	char ** options;
+	int opt_size;
 
 	// Se genera un xid aleatorio
 	r = (double)random()/(double)RAND_MAX;
@@ -42,16 +44,17 @@ int sendDHCPDISCOVER(){
 	// Se crea la estructura del mensaje con los datos adecuados
 	dhcpdiscover = new_default_mdhcp();
 	dhcpdiscover->op = DHCP_OP_BOOTREQUEST;
-	dhcpdiscover->htype = 0;//TODO mirar el rfc.
 	dhcpdiscover->hlen = 6;
 	dhcpdiscover->xid = xid;
 	dhcpdiscover->secs = 0; //TODO preguntar al profesor
 	memcpy(dhcpdiscover->chaddr, haddress, dhcpdiscover->hlen);
-	//dhcpdiscover->sname= ""; //TODO mirar options?
-	//dhcpdiscover->file= ""; //TODO mirar options?
-	dhcpdiscover->options= NULL; //TODO mirar options?
+
+	options = malloc(4);
+	opt_size = getDhcpOptions(options, DHCPDISCOVER);
+	dhcpdiscover->options= *options; //TODO mirar options?
+	dhcpdiscover->opt_length = opt_size;
 // Prueba
-	print_mdhcp(dhcpdiscover); //TODO quitar
+	//print_mdhcp(dhcpdiscover); //TODO quitar
 
 	// Se envia el mensaje dhcp discover a broadcast
 	if(sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) == true){
@@ -62,7 +65,9 @@ int sendDHCPDISCOVER(){
 		fprintf(stderr,"ERROR: No se ha podido mandar el mensaje dhcpdiscover.\n");
 	}
 
+	free(options);
 	free_mdhcp(dhcpdiscover);
+
 	return ret;
 }
 
@@ -145,10 +150,13 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 	addr.sll_addr[3] = 255;
 	addr.sll_addr[4] = 255;
 	addr.sll_addr[5] = 255;
-	addr.sll_addr[6] = 255;
-	addr.sll_addr[7] = 255;
+	addr.sll_addr[6] = 0;
+	addr.sll_addr[7] = 0;
 	addr.sll_halen = 6;
 	addr.sll_ifindex = obtain_ifindex();
+	addr.sll_hatype = 0xFFFF;
+	addr.sll_protocol = htons(ETH_P_IP);
+	addr.sll_pkttype = PACKET_BROADCAST;
 
 	if(addr.sll_ifindex == -1){
 		ret = -1;
@@ -157,11 +165,12 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 	/// Definimos el mensaje, inclusion de cabeceras...
 	msg = malloc(4);
 	size = getETHMessage(msg, address, dhcpStuct);
+	printf("<%s>\n", *msg);
 	printf("El tamaño del pakete es %d\n", size);
 
 
 	// Se realiza el envio
-	enviado = sendto(sock, msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_ll));
+	enviado = sendto(sock, *msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_ll));
 	if(enviado == -1){
 		perror("sendto");
 		ret = -1;

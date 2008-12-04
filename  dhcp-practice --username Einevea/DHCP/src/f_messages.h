@@ -58,6 +58,7 @@ void free_mdhcp(struct mdhcp_t *str_dhcp);
 void free_message(struct msg_dhcp_t *message);
 void print_mdhcp(struct mdhcp_t *str_dhcp);
 void print_message(struct msg_dhcp_t *msg);
+int getDhcpOptions(char** opt, int type);
 
 int getETHMessage(unsigned char** , in_addr_t , struct mdhcp_t* );
 

@@ -86,7 +86,7 @@ struct mdhcp_t* new_default_mdhcp() {
 	int s;
 	ret = malloc(sizeof(struct mdhcp_t));
 	ret->op = 0;
-	ret->htype = 0;
+	ret->htype = 1;
 	ret->hlen = 0;
 	ret->hops = 0;
 	ret->xid = 0;
@@ -246,6 +246,7 @@ int getETHMessage(unsigned char** msg, in_addr_t hostname, struct mdhcp_t* mdhcp
 	dhcp_msg = from_mdhcp_to_message(mdhcp);
 	total_size = get_UDPhdr(udp_msg, dhcp_msg);
 	total_size = get_IPhdr(msg, hostname,*udp_msg, total_size);
+	printf("<%s>\n",*msg);
 	free(*udp_msg);
 	free(udp_msg);
 	return total_size;
@@ -253,29 +254,25 @@ int getETHMessage(unsigned char** msg, in_addr_t hostname, struct mdhcp_t* mdhcp
 
 int get_UDPhdr(unsigned char ** msg, struct msg_dhcp_t* dhcp_msg){
 	int size, p;
-	u_int16_t saux;
 	struct udphdr *udph;
 
 	size = 8 + dhcp_msg->length;
 	*msg = malloc(size);
 	udph = malloc(sizeof(struct udphdr));
-	udph->source = CLIENT_PORT;
-	udph->dest = SERVER_PORT;
-	udph->len = size;
+	udph->source = htons(CLIENT_PORT);
+	udph->dest = htons(SERVER_PORT);
+	udph->len = htons(size);
 	udph->check = 0;
 
 	p = 0;
-	saux = htons(udph->source);
-	memcpy(*msg, &saux, 2);
+	memcpy(*msg, &udph->source, 2);
 	p += 2;
-	saux = htons(udph->dest);
-	memcpy(*msg + p, &saux, 2);
+	memcpy(*msg + p, &udph->dest, 2);
+	printf("<<%s>>\n", *msg);
 	p += 2;
-	saux = htons(udph->len);
-	memcpy(*msg + p, &saux, 2);
+	memcpy(*msg + p, &udph->len, 2);
 	p += 2;
-	saux = htons(udph->check);
-	memcpy(*msg + p, &saux, 2);
+	memcpy(*msg + p, &udph->check, 2);
 	p += 2;
 	memcpy(*msg + p, dhcp_msg->msg, dhcp_msg->length);
 
@@ -293,16 +290,17 @@ int get_IPhdr(unsigned char ** msg, in_addr_t hostname, unsigned char * udp_msg,
 	size = 20 + udp_size;
 	*msg = malloc(size);
 	iph = malloc(sizeof(struct iphdr));
-	iph->version = htons(4);
-	iph->ihl = htons(5);
+	iph->version = 4;
+	iph->ihl = 5;
 	iph->tos = 0;
 	iph->tot_len = htons(size);
-	iph->id = htons(getuid());
+	iph->id = getuid();
+	printf("--%d\n", iph->id);
 	iph->ttl = 255;
 	iph->frag_off = 0;
-	iph->protocol = htons(IPPROTO_UDP);
+	iph->protocol = IPPROTO_UDP;
 	iph->saddr = 0;
-	iph->daddr = htons(hostname);
+	iph->daddr = hostname;
 	iph->check = htons(in_cksum((unsigned short *)iph, sizeof(struct iphdr)));
 
 
@@ -331,8 +329,10 @@ int get_IPhdr(unsigned char ** msg, in_addr_t hostname, unsigned char * udp_msg,
 	memcpy(*msg + p, &iph->daddr, 4);
 	p += 4;
 
-	free(iph);
+	memcpy(*msg + p, udp_msg, udp_size);
 
+	free(iph);
+	printf("<%s>\n",*msg);
 	return size;
 }
 
@@ -358,5 +358,39 @@ unsigned short in_cksum(unsigned short *ptr, int nbytes){
 	answer = ~sum;
 
 	return answer;
+}
+
+int getDhcpOptions(char** opt, int type){
+	//DHCPDISCOVER
+	int p, size;
+	u_int8_t magic_c [4];
+	u_int8_t msg_type [3];
+	u_int8_t end_opt;
+
+	magic_c[0] = 99;
+	magic_c[1] = 130;
+	magic_c[2] = 83;
+	magic_c[3] = 99;
+
+	msg_type[0] = 0x35;
+	msg_type[1] = 0x1;
+	msg_type[2] = 0x1;
+
+
+	end_opt = 0xFF;
+
+	size = 64;
+	*opt = malloc(size);
+
+	bzero(*opt, size);
+	p = 0;
+	memcpy(*opt, magic_c, 4);
+	p += 4;
+	memcpy(*opt + p, msg_type, 3);
+	p += 3;
+	memcpy(*opt + p, &end_opt, 1);
+	p += 1;
+
+	return size;
 }
 
