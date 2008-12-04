@@ -13,5 +13,6 @@
 void printTrace(int xid, enum dhcp_message state, char* str);
 void time_wait(int microsec);
 void obtainHardwareAddress();
+int obtain_ifindex();
 
 #endif /* UTILS_H_ */

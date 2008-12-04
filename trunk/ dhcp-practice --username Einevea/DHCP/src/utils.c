@@ -109,3 +109,16 @@ void obtainHardwareAddress(){
 	memcpy(haddress,ifr.ifr_hwaddr.sa_data, haddress_size);
 	close(fd);
 }
+
+int obtain_ifindex(){
+	int fd;
+	struct ifreq ifr;
+
+	fd = socket(PF_INET, SOCK_DGRAM,0);
+	strcpy(ifr.ifr_ifrn.ifrn_name, "eth0"); // TODO cambiar
+	if(ioctl(fd, SIOCGIFINDEX, &ifr) < 0){
+		perror("ioctl");
+		return -1;
+	}
+	return ifr.ifr_ifru.ifru_ivalue;
+}
