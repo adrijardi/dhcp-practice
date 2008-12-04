@@ -21,6 +21,7 @@
 #include "constants.h"
 #include "dhcp_state.h"
 #include "f_messages.h"
+#include "utils.h"
 
 //Metodos internos
 int sendMSG(struct msg_dhcp_t *message);
@@ -82,6 +83,7 @@ int sendMSG(struct msg_dhcp_t *message){
 	return ret;
 }
 
+/* ANTIGUO
 int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 	struct sockaddr_in	addr; // Direccion de envio
 	unsigned char** msg;
@@ -110,6 +112,56 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 
 	// Se realiza el envio
 	enviado = sendto(sock, msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_in));
+	if(enviado == -1){
+		perror("sendto");
+		ret = -1;
+	}
+	printf("Enviado %d\n", enviado);
+
+	return ret;
+}*/
+
+int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
+	struct sockaddr_ll	addr; // Direccion de envio
+	unsigned char** msg;
+	size_t size;
+	int ret, sock, enviado;
+	ret = 0;
+
+	// Creamos el socket
+	sock = socket (PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
+	if(sock == -1){
+		perror("socket");
+		ret = -1;
+	}
+
+	// Definimos parametros de configuracion para el envio
+	///Se inicia la direccion de destino
+	bzero(&addr, sizeof(struct sockaddr_ll));
+	addr.sll_family = AF_PACKET;
+	addr.sll_addr[0] = 255;
+	addr.sll_addr[1] = 255;
+	addr.sll_addr[2] = 255;
+	addr.sll_addr[3] = 255;
+	addr.sll_addr[4] = 255;
+	addr.sll_addr[5] = 255;
+	addr.sll_addr[6] = 255;
+	addr.sll_addr[7] = 255;
+	addr.sll_halen = 6;
+	addr.sll_ifindex = obtain_ifindex();
+
+	if(addr.sll_ifindex == -1){
+		ret = -1;
+	}
+
+	/// Definimos el mensaje, inclusion de cabeceras...
+	msg = malloc(4);
+	size = getETHMessage(msg, address, dhcpStuct);
+	printf("El tamaño del pakete es %d\n", size);
+
+
+	// Se realiza el envio
+	enviado = sendto(sock, msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_ll));
 	if(enviado == -1){
 		perror("sendto");
 		ret = -1;
