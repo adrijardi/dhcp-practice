@@ -115,10 +115,12 @@ int obtain_ifindex(){
 	struct ifreq ifr;
 
 	fd = socket(PF_INET, SOCK_DGRAM,0);
-	strcpy(ifr.ifr_ifrn.ifrn_name, "eth0"); // TODO cambiar
+	strcpy(ifr.ifr_ifrn.ifrn_name, iface);
 	if(ioctl(fd, SIOCGIFINDEX, &ifr) < 0){
 		perror("ioctl");
+		printf("La interfaz especificada no es válida\n");
 		return -1;
 	}
+
 	return ifr.ifr_ifru.ifru_ivalue;
 }

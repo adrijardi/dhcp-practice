@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/socket.h>
+#include <linux/if_ether.h>
+#include <netinet/in.h>
+#include <pthread.h>
 
 #include "dhcpcl.h"
 #include "constants.h"
@@ -73,7 +77,10 @@ void run() {
 }
 
 int init() {
+	pthread_t hilo;
 	printf("En init\n");
+	//Se lanza un nuevo hilo para el envio
+	pthread_create(&hilo, NULL)
 	// Se espera un numero aleatorio de segundos entre 1 y 10
 	srandom(time(NULL));
 	time_wait((random() % 9000) + 1000);
@@ -82,8 +89,24 @@ int init() {
 }
 
 int selecting() {
+	fd_set recvset;
+	int sock_recv;
+
 	printf("En selecting\n");
+
+	sock_recv = socket (PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
+
+	FD_SET(sock_recv, &recvset);
+
 	//Recivimos multiples respuestas
+	if(select(2,  &recvset,  NULL, NULL, NULL) < 0){
+		perror("select");
+		//TODO
+		return -1;
+	}
+	printf("lala\n");
+
+
 	//Elegimos ip
 	//Enviamos DHCPrequest
 	return true;
