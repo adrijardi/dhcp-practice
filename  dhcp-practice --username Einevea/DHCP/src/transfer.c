@@ -57,7 +57,7 @@ int sendDHCPDISCOVER(){
 	//print_mdhcp(dhcpdiscover); //TODO quitar
 
 	// Se envia el mensaje dhcp discover a broadcast
-	if(sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) == true){
+	if(sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) >= 0){
 		//state = SELECTING; // TODO se necesita sincronización multihilo?
 		ret = true;
 		printf("guay\n");
@@ -154,6 +154,8 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 	addr.sll_addr[7] = 0;
 	addr.sll_halen = 6;
 	addr.sll_ifindex = obtain_ifindex();
+	if(addr.sll_ifindex < 0)
+		ret = -1;
 	addr.sll_hatype = 0xFFFF;
 	addr.sll_protocol = htons(ETH_P_IP);
 	addr.sll_pkttype = PACKET_BROADCAST;
@@ -162,20 +164,22 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 		ret = -1;
 	}
 
-	/// Definimos el mensaje, inclusion de cabeceras...
-	msg = malloc(4);
-	size = getETHMessage(msg, address, dhcpStuct);
-	printf("<%s>\n", *msg);
-	printf("El tamaño del pakete es %d\n", size);
+	if(ret >= 0){
+		/// Definimos el mensaje, inclusion de cabeceras...
+		msg = malloc(4);
+		size = getETHMessage(msg, address, dhcpStuct);
+		printf("<%s>\n", *msg);
+		printf("El tamaño del pakete es %d\n", size);
 
 
-	// Se realiza el envio
-	enviado = sendto(sock, *msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_ll));
-	if(enviado == -1){
-		perror("sendto");
-		ret = -1;
+		// Se realiza el envio
+		enviado = sendto(sock, *msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_ll));
+		if(enviado == -1){
+			perror("sendto");
+			ret = -1;
+		}
+		printf("Enviado %d\n", enviado);
 	}
-	printf("Enviado %d\n", enviado);
 
 	return ret;
 }

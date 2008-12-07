@@ -15,6 +15,7 @@ char* StrToHexStr(char *str, int leng);
 int get_UDPhdr(unsigned char **, struct msg_dhcp_t*);
 int get_IPhdr(unsigned char **, in_addr_t, unsigned char *, int);
 unsigned short in_cksum(unsigned short *ptr, int nbytes);
+//u_int16_t software_checksum(u_int8_t *rxtx_buffer, u_int16_t len, u_int16_t sum);
 
 //CODIGO
 int mdhcp_to_message_size(struct mdhcp_t *str_dhcp) {
@@ -172,7 +173,7 @@ void free_mdhcp(struct mdhcp_t *str_dhcp) {
 void free_message(struct msg_dhcp_t *message) {
 	if (message->length > 0)
 		//free(message->msg);
-	free(message);
+		free(message);
 }
 void print_mdhcp(struct mdhcp_t *str_dhcp) {
 	char *cad, *chaddr, *sname, *file, *options, *xchaddr;
@@ -235,7 +236,8 @@ void print_message(struct msg_dhcp_t *message) {
  * Obtiene el mensaje en formato char* a partir de las cabeceras
  * Establece los valores de tamaño de las cabeceras
  */
-int getETHMessage(unsigned char** msg, in_addr_t hostname, struct mdhcp_t* mdhcp) {
+int getETHMessage(unsigned char** msg, in_addr_t hostname,
+		struct mdhcp_t* mdhcp) {
 	int total_size;
 	struct msg_dhcp_t* dhcp_msg;
 	unsigned char** udp_msg;
@@ -245,14 +247,14 @@ int getETHMessage(unsigned char** msg, in_addr_t hostname, struct mdhcp_t* mdhcp
 	total_size = 0;
 	dhcp_msg = from_mdhcp_to_message(mdhcp);
 	total_size = get_UDPhdr(udp_msg, dhcp_msg);
-	total_size = get_IPhdr(msg, hostname,*udp_msg, total_size);
-	printf("<%s>\n",*msg);
+	total_size = get_IPhdr(msg, hostname, *udp_msg, total_size);
+	printf("<%s>\n", *msg);
 	free(*udp_msg);
 	free(udp_msg);
 	return total_size;
 }
 
-int get_UDPhdr(unsigned char ** msg, struct msg_dhcp_t* dhcp_msg){
+int get_UDPhdr(unsigned char ** msg, struct msg_dhcp_t* dhcp_msg) {
 	int size, p;
 	struct udphdr *udph;
 
@@ -281,8 +283,8 @@ int get_UDPhdr(unsigned char ** msg, struct msg_dhcp_t* dhcp_msg){
 	return size;
 }
 
-
-int get_IPhdr(unsigned char ** msg, in_addr_t hostname, unsigned char * udp_msg, int udp_size){
+int get_IPhdr(unsigned char ** msg, in_addr_t hostname,
+		unsigned char * udp_msg, int udp_size) {
 	int size, p;
 	u_int8_t caux;
 	struct iphdr *iph;
@@ -290,18 +292,23 @@ int get_IPhdr(unsigned char ** msg, in_addr_t hostname, unsigned char * udp_msg,
 	size = 20 + udp_size;
 	*msg = malloc(size);
 	iph = malloc(sizeof(struct iphdr));
+
+	/* fillout ip-header */
+	bzero(iph, sizeof(struct iphdr));
+
 	iph->version = 4;
 	iph->ihl = 5;
 	iph->tos = 0;
 	iph->tot_len = htons(size);
 	iph->id = getuid();
 	printf("--%d\n", iph->id);
-	iph->ttl = 255;
+	iph->ttl = 64;
 	iph->frag_off = 0;
 	iph->protocol = IPPROTO_UDP;
 	iph->saddr = 0;
 	iph->daddr = hostname;
-	iph->check = htons(in_cksum((unsigned short *)iph, sizeof(struct iphdr)));
+	iph->check = 0;
+	iph->check = in_cksum((unsigned short *)iph, sizeof(struct iphdr));
 
 
 	p = 0;
@@ -332,39 +339,41 @@ int get_IPhdr(unsigned char ** msg, in_addr_t hostname, unsigned char * udp_msg,
 	memcpy(*msg + p, udp_msg, udp_size);
 
 	free(iph);
-	printf("<%s>\n",*msg);
+	printf("<%s>\n", *msg);
 	return size;
 }
 
-unsigned short in_cksum(unsigned short *ptr, int nbytes){
-	register long sum;
-	u_short oddbyte;
-	register u_short answer;
+unsigned short in_cksum(unsigned short *addr, int len)
+{
+	int nleft = len;
+	int sum = 0;
+	unsigned short *w = addr;
+	unsigned short answer = 0;
 
-	sum = 0;
-	while(nbytes > 1){
-		sum += *ptr++;
-		nbytes -= 2;
+	while (nleft > 1) {
+		sum += *w++;
+		nleft -= 2;
 	}
 
-	if(nbytes == 1){
-		oddbyte = 0;
-		*((u_char *) &oddbyte) = *(u_char *)ptr;
-		sum += oddbyte;
+	if (nleft == 1) {
+		*(unsigned char *) (&answer) = *(unsigned char *) w;
+		sum += answer;
 	}
 
-	sum  = (sum >> 16) + (sum & 0xffff);
+	sum = (sum >> 16) + (sum & 0xFFFF);
 	sum += (sum >> 16);
 	answer = ~sum;
-
-	return answer;
+	return (answer);
 }
 
-int getDhcpOptions(char** opt, int type){
+
+int getDhcpOptions(char** opt, int type) {
 	//DHCPDISCOVER
 	int p, size;
-	u_int8_t magic_c [4];
-	u_int8_t msg_type [3];
+	u_int8_t magic_c[4];
+	u_int8_t msg_type[3];
+	u_int8_t host_name[14];
+	u_int8_t param_req[13];
 	u_int8_t end_opt;
 
 	magic_c[0] = 99;
@@ -376,6 +385,34 @@ int getDhcpOptions(char** opt, int type){
 	msg_type[1] = 0x1;
 	msg_type[2] = 0x1;
 
+	host_name[0] = 0x0C;
+	host_name[1] = 0x0C;
+	host_name[2] = 0x61;
+	host_name[3] = 0x64;
+	host_name[4] = 0x72;
+	host_name[5] = 0x69;
+	host_name[6] = 0x2D;
+	host_name[7] = 0x64;
+	host_name[8] = 0x65;
+	host_name[9] = 0x73;
+	host_name[10] = 0x6B;
+	host_name[11] = 0x74;
+	host_name[12] = 0x6F;
+	host_name[13] = 0x70;
+
+	param_req[0] = 0x37;
+	param_req[1] = 0x0B;
+	param_req[2] = 0x01;
+	param_req[3] = 0x1C;
+	param_req[4] = 0x02;
+	param_req[5] = 0x03;
+	param_req[6] = 0x0F;
+	param_req[7] = 0x06;
+	param_req[8] = 0x77;
+	param_req[9] = 0x0C;
+	param_req[10] = 0x2C;
+	param_req[11] = 0x2F;
+	param_req[12] = 0x1A;
 
 	end_opt = 0xFF;
 
@@ -388,6 +425,10 @@ int getDhcpOptions(char** opt, int type){
 	p += 4;
 	memcpy(*opt + p, msg_type, 3);
 	p += 3;
+	memcpy(*opt + p, &host_name, 14);
+	p += 14;
+	memcpy(*opt + p, &param_req, 13);
+	p += 13;
 	memcpy(*opt + p, &end_opt, 1);
 	p += 1;
 
