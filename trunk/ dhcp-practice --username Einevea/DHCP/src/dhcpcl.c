@@ -117,7 +117,6 @@ int selecting() {
 		// Definición de la dirección de recepción
 		bzero(&addr, sizeof(struct sockaddr_ll));
 		addr.sll_family = AF_PACKET;
-		addr.sll_protocol = ETH_P_IP;
 		addr.sll_addr[0] = 255;
 		addr.sll_addr[1] = 255;
 		addr.sll_addr[2] = 255;
@@ -131,8 +130,8 @@ int selecting() {
 		if(addr.sll_ifindex < 0)
 			ret = -1;
 		addr.sll_hatype = 0xFFFF;
-		addr.sll_protocol = htons(ETH_P_IP);
-		addr.sll_pkttype = PACKET_BROADCAST;
+		addr.sll_protocol = htons(ETH_P_IP); //TODO raro que funcione con ese htons
+		addr.sll_pkttype = PACKET_BROADCAST; // TODO no estoy seguro del broadcast
 
 		if(addr.sll_ifindex == -1){
 			ret = -1;
