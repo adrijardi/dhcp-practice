@@ -62,4 +62,7 @@ int getDhcpOptions(char** opt, int type);
 
 int getETHMessage(unsigned char** , in_addr_t , struct mdhcp_t* );
 
+//Obtiene la estructura dhcp a partir del mensaje ethernet
+struct mdhcp_t* get_dhcpH_from_ethM(char * msg, int len);
+
 #endif /* F_MESSAGES_H_ */
