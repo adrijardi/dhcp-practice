@@ -90,8 +90,7 @@ void printTrace(int xid, enum dhcp_message state, char* str){
 
 void time_wait(int microsec){
 	unsigned long time = microsec * 1000;
-	//TODO quitar el comentario
-	//usleep(time);
+	usleep(time);
 	time++;
 }
 
@@ -113,6 +112,7 @@ void obtainHardwareAddress(){
 int obtain_ifindex(){
 	int fd;
 	struct ifreq ifr;
+	//TODO cambiar para que solo obtenga mediante ioctl en la primera petición
 
 	fd = socket(PF_INET, SOCK_DGRAM,0);
 	strcpy(ifr.ifr_ifrn.ifrn_name, iface);

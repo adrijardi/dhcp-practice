@@ -29,7 +29,6 @@ int sendETH_Msg(struct mdhcp_t*, in_addr_t address);
 int sendUDP_Msg(struct mdhcp_t*, in_addr_t address );
 
 int sendDHCPDISCOVER(){
-	printf("Vamos a petar\n");
 	int ret = EXIT_ERROR;
 	unsigned int xid;
 	double r;
@@ -60,7 +59,6 @@ int sendDHCPDISCOVER(){
 	if(sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) >= 0){
 		//state = SELECTING; // TODO se necesita sincronización multihilo?
 		ret = true;
-		printf("guay\n");
 	}else{
 		fprintf(stderr,"ERROR: No se ha podido mandar el mensaje dhcpdiscover.\n");
 	}
@@ -168,8 +166,7 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 		/// Definimos el mensaje, inclusion de cabeceras...
 		msg = malloc(4);
 		size = getETHMessage(msg, address, dhcpStuct);
-		printf("<%s>\n", *msg);
-		printf("El tamaño del pakete es %d\n", size);
+		//printf("El tamaño del pakete es %d\n", size);
 
 
 		// Se realiza el envio

@@ -12,6 +12,7 @@
 #include <linux/if_ether.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <netpacket/packet.h>
 
 #include "dhcpcl.h"
 #include "constants.h"
@@ -19,6 +20,7 @@
 #include "pruebas/pruebas.h"
 #include "dhcp_state.h"
 #include "transfer.h"
+#include "f_messages.h"
 
 //DECLARACION DE METODOS INTERNOS
 void printParamsError(int err);
@@ -27,7 +29,7 @@ void pruebas();
 int checkIFace(char* iface);
 void getFileParams();
 int initialize();
-int init();
+void *init(void *arg);
 int selecting();
 int requesting();
 int bound();
@@ -57,59 +59,113 @@ int main(int argc, const char* argv[]) {
 }
 
 void run() {
+	pthread_t hilo;
+	pthread_attr_t hilo_attr;
 	int isbound = 0;
+	int result = 0;
+
 	while (!isbound) {
-		if (init()) {
-			if (selecting()) {
+		//Se lanza un nuevo hilo para el envio
+		pthread_attr_init(&hilo_attr);
+		if(pthread_create(&hilo, &hilo_attr, init, NULL) < 0) //TODO mirar valor de retorno
+			perror("pthread_create");
+
+			/*if (init()) {*/
+		result = selecting();
+		pthread_join(hilo, NULL);
+			if (result >= 0) {
 				isbound = requesting();
 			} else {
 				//TODO
 				printf("Error 1\n");
 				exit(-1);
 			}
-		} else {
+		/*} else {
 			//TODO
 			printf("Error 2\n");
 			exit(-1);
-		}
+		}*/
 	}
 	bound();
 }
 
-int init() {
-	pthread_t hilo;
+void *init(void *arg) {
 	printf("En init\n");
-	//Se lanza un nuevo hilo para el envio
-	pthread_create(&hilo, NULL)
 	// Se espera un numero aleatorio de segundos entre 1 y 10
 	srandom(time(NULL));
 	time_wait((random() % 9000) + 1000);
-	//Posible bucle de reenvio
-	return sendDHCPDISCOVER();
+	sendDHCPDISCOVER();
+	return NULL;
 }
 
 int selecting() {
 	fd_set recvset;
 	int sock_recv;
+	struct sockaddr_ll addr; // Direccion de recepción
+	int ret = 1;
+	char * buf = malloc(1000); //TODO
+	struct mdhcp_t *dhcp_recv;
 
 	printf("En selecting\n");
-
+	// Creación del socket de recepción
 	sock_recv = socket (PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
-
-	FD_SET(sock_recv, &recvset);
-
-	//Recivimos multiples respuestas
-	if(select(2,  &recvset,  NULL, NULL, NULL) < 0){
-		perror("select");
-		//TODO
-		return -1;
+	if(sock_recv < 0){
+		perror("socket");
+		ret = -1;
 	}
-	printf("lala\n");
+	if(ret >= 0){
+		// Definición de la dirección de recepción
+		bzero(&addr, sizeof(struct sockaddr_ll));
+		addr.sll_family = AF_PACKET;
+		addr.sll_protocol = ETH_P_IP;
+		addr.sll_addr[0] = 255;
+		addr.sll_addr[1] = 255;
+		addr.sll_addr[2] = 255;
+		addr.sll_addr[3] = 255;
+		addr.sll_addr[4] = 255;
+		addr.sll_addr[5] = 255;
+		addr.sll_addr[6] = 0;
+		addr.sll_addr[7] = 0;
+		addr.sll_halen = 6;
+		addr.sll_ifindex = obtain_ifindex();
+		if(addr.sll_ifindex < 0)
+			ret = -1;
+		addr.sll_hatype = 0xFFFF;
+		addr.sll_protocol = htons(ETH_P_IP);
+		addr.sll_pkttype = PACKET_BROADCAST;
 
+		if(addr.sll_ifindex == -1){
+			ret = -1;
+		}
 
-	//Elegimos ip
-	//Enviamos DHCPrequest
-	return true;
+		if(ret >= 0){
+			ret = bind(sock_recv, (struct sockaddr *)&addr, sizeof(struct sockaddr_ll));
+			if(ret < 0)
+				perror("bind");
+
+			int recv_size = recvfrom(sock_recv, buf, 1000, 0, NULL, NULL);
+			printf("%d\n",recv_size);
+
+			dhcp_recv = get_dhcpH_from_ethM(buf, recv_size);
+			printf("ipOrigen %d\n",dhcp_recv->siaddr);
+			printf("id %d\n",dhcp_recv->xid);
+
+			/*FD_SET(sock_recv, &recvset); TODO hacer el select, ahora mismo solo coge 1 pakete
+
+			//Recivimos multiples respuestas
+			if(select(2,  &recvset,  NULL, NULL, NULL) < 0){
+				perror("select");
+				//TODO
+				return -1;
+			}
+			printf("lala\n");
+*/
+
+		//Elegimos ip
+		//Enviamos DHCPrequest
+		}
+	}
+	return ret;
 }
 
 int requesting() {
