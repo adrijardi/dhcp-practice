@@ -31,4 +31,7 @@ enum dhcp_message {DHCPDISCOVER=1, DHCPOFFER=2, DHCPREQUEST=3, DHCPACK=4, DHCPNA
 //client port
 #define CLIENT_PORT 68
 
+
+#define MAXDHCPOFFERS 10
+
 #endif /* CONSTANTS_H_ */

@@ -27,6 +27,8 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
+#include "utils.h"
+
 struct mdhcp_t{
 	unsigned char op;
 	unsigned char htype;
@@ -58,7 +60,9 @@ void free_mdhcp(struct mdhcp_t *str_dhcp);
 void free_message(struct msg_dhcp_t *message);
 void print_mdhcp(struct mdhcp_t *str_dhcp);
 void print_message(struct msg_dhcp_t *msg);
-int getDhcpOptions(char** opt, int type);
+
+int getDhcpDiscoverOptions(char** opt);
+int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip);
 
 int getETHMessage(unsigned char** , in_addr_t , struct mdhcp_t* );
 

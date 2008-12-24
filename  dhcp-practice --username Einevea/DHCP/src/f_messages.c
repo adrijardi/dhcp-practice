@@ -8,6 +8,7 @@
 #include "f_messages.h"
 #include "constants.h"
 #include "dhcp_state.h"
+#include "utils.h"
 
 //METODOS PRIVADOS
 char* StrToHexStr(char *str, int leng);
@@ -363,13 +364,12 @@ unsigned short in_cksum(unsigned short *addr, int len)
 }
 
 
-int getDhcpOptions(char** opt, int type) {
-	//DHCPDISCOVER
+int getDhcpDiscoverOptions(char** opt) {
 	int p, size;
 	u_int8_t magic_c[4];
 	u_int8_t msg_type[3];
-	u_int8_t host_name[14];
-	u_int8_t param_req[13];
+	//u_int8_t host_name[14];
+	//u_int8_t param_req[13];
 	u_int8_t end_opt;
 
 	magic_c[0] = 99;
@@ -381,7 +381,7 @@ int getDhcpOptions(char** opt, int type) {
 	msg_type[1] = 0x1;
 	msg_type[2] = 0x1;
 
-	host_name[0] = 0x0C;
+	/*host_name[0] = 0x0C;
 	host_name[1] = 0x0C;
 	host_name[2] = 0x61;
 	host_name[3] = 0x64;
@@ -408,7 +408,7 @@ int getDhcpOptions(char** opt, int type) {
 	param_req[9] = 0x0C;
 	param_req[10] = 0x2C;
 	param_req[11] = 0x2F;
-	param_req[12] = 0x1A;
+	param_req[12] = 0x1A;*/
 
 	end_opt = 0xFF;
 
@@ -421,14 +421,19 @@ int getDhcpOptions(char** opt, int type) {
 	p += 4;
 	memcpy(*opt + p, msg_type, 3);
 	p += 3;
-	memcpy(*opt + p, &host_name, 14);
+	/*memcpy(*opt + p, &host_name, 14);
 	p += 14;
 	memcpy(*opt + p, &param_req, 13);
-	p += 13;
+	p += 13;*/
 	memcpy(*opt + p, &end_opt, 1);
 	p += 1;
 
 	return size;
+}
+
+int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip){
+
+return 0;
 }
 
 struct mdhcp_t* get_dhcpH_from_ethM(char * msg, int len){

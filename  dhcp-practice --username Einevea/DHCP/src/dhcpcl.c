@@ -99,72 +99,24 @@ void *init(void *arg) {
 }
 
 int selecting() {
-	fd_set recvset;
-	int sock_recv;
-	struct sockaddr_ll addr; // Direccion de recepción
-	int ret = 1;
-	char * buf = malloc(1000); //TODO
-	struct mdhcp_t *dhcp_recv;
+	struct mdhcp_t *** dhcpMessages;
+	int numMessages;
+	struct offerIP *selected_ip;
+	int ret;
+	dhcpMessages = malloc(4);
 
 	printf("En selecting\n");
-	// Creación del socket de recepción
-	sock_recv = socket (PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
-	if(sock_recv < 0){
-		perror("socket");
-		ret = -1;
+
+	numMessages = get_selecting_messages(dhcpMessages);
+	//Elegimos ip
+	selected_ip = select_ip( *dhcpMessages);
+	free(dhcpMessages);
+	ret = sendDHCPREQUEST(selected_ip);
+	if(ret < 0){
+		//TODO oooo
 	}
-	if(ret >= 0){
-		// Definición de la dirección de recepción
-		bzero(&addr, sizeof(struct sockaddr_ll));
-		addr.sll_family = AF_PACKET;
-		addr.sll_addr[0] = 255;
-		addr.sll_addr[1] = 255;
-		addr.sll_addr[2] = 255;
-		addr.sll_addr[3] = 255;
-		addr.sll_addr[4] = 255;
-		addr.sll_addr[5] = 255;
-		addr.sll_addr[6] = 0;
-		addr.sll_addr[7] = 0;
-		addr.sll_halen = 6;
-		addr.sll_ifindex = obtain_ifindex();
-		if(addr.sll_ifindex < 0)
-			ret = -1;
-		addr.sll_hatype = 0xFFFF;
-		addr.sll_protocol = htons(ETH_P_IP); //TODO raro que funcione con ese htons
-		addr.sll_pkttype = PACKET_BROADCAST; // TODO no estoy seguro del broadcast
-
-		if(addr.sll_ifindex == -1){
-			ret = -1;
-		}
-
-		if(ret >= 0){
-			ret = bind(sock_recv, (struct sockaddr *)&addr, sizeof(struct sockaddr_ll));
-			if(ret < 0)
-				perror("bind");
-
-			int recv_size = recvfrom(sock_recv, buf, 1000, 0, NULL, NULL);
-			printf("%d\n",recv_size);
-
-			dhcp_recv = get_dhcpH_from_ethM(buf, recv_size);
-			printf("ipOrigen %d\n",dhcp_recv->siaddr);
-			printf("id %d\n",dhcp_recv->xid);
-
-			/*FD_SET(sock_recv, &recvset); TODO hacer el select, ahora mismo solo coge 1 pakete
-
-			//Recivimos multiples respuestas
-			if(select(2,  &recvset,  NULL, NULL, NULL) < 0){
-				perror("select");
-				//TODO
-				return -1;
-			}
-			printf("lala\n");
-*/
-
-		//Elegimos ip
-		//Enviamos DHCPrequest
-		}
-	}
-	return ret;
+	free(selected_ip);
+	return 0;
 }
 
 int requesting() {
