@@ -28,30 +28,9 @@
 #include <netinet/udp.h>
 
 #include "utils.h"
-
-struct mdhcp_t{
-	unsigned char op;
-	unsigned char htype;
-	unsigned char hlen;
-	unsigned char hops;
-	unsigned int xid;
-	unsigned short secs;
-	unsigned short flags;
-	unsigned int ciaddr;
-	unsigned int yiaddr;
-	unsigned int siaddr;
-	unsigned int giaddr;
-	char chaddr[16];
-	char sname[64];
-	char file[128];
-	unsigned int opt_length;
-	char *options;
-};
-
-struct msg_dhcp_t{
-	unsigned int length;
-	unsigned char * msg;
-};
+#include "constants.h"
+#include "dhcp_state.h"
+#include "structs.h"
 
 struct mdhcp_t* new_default_mdhcp();
 struct msg_dhcp_t* from_mdhcp_to_message(struct mdhcp_t *str_dhcp);
@@ -62,7 +41,7 @@ void print_mdhcp(struct mdhcp_t *str_dhcp);
 void print_message(struct msg_dhcp_t *msg);
 
 int getDhcpDiscoverOptions(char** opt);
-int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip);
+int getDhcpRequestOptions(char** opt, struct offerIP * selected_ip);
 
 int getETHMessage(unsigned char** , in_addr_t , struct mdhcp_t* );
 

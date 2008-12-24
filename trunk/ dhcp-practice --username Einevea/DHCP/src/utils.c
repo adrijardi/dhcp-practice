@@ -5,19 +5,6 @@
  *      Author: dconde
  */
 
-#include <unistd.h>
-#include <stdio.h>
-#include <time.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <linux/if_ether.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include "constants.h"
-#include "dhcp_state.h"
 #include "utils.h"
 
 char * getTimestamp(){

@@ -6,9 +6,6 @@
  */
 
 #include "f_messages.h"
-#include "constants.h"
-#include "dhcp_state.h"
-#include "utils.h"
 
 //METODOS PRIVADOS
 char* StrToHexStr(char *str, int leng);
@@ -156,24 +153,23 @@ struct mdhcp_t* from_message_to_mdhcp(struct msg_dhcp_t *message) {
 	p += 64;
 	memcpy(&ret->file, msg + p, 128);
 	p += 128;
-
 	ret->opt_length = osize;
 	if (osize > 0) {
 		ret->options = malloc(osize);
-		memcpy(&ret->options, msg + p, osize);
+		memcpy(ret->options, msg + p, osize);
 	}
 
 	return ret;
 }
 
 void free_mdhcp(struct mdhcp_t *str_dhcp) {
-	if (str_dhcp->opt_length > 0)
+	//if (str_dhcp->opt_length > 0)
 		free(str_dhcp->options);
 	free(str_dhcp);
 }
 void free_message(struct msg_dhcp_t *message) {
-	if (message->length > 0)
-		//free(message->msg); TODO memoria
+	//if (message->length > 0)
+		free(message->msg); //TODO memoria
 		free(message);
 }
 void print_mdhcp(struct mdhcp_t *str_dhcp) {
@@ -244,11 +240,14 @@ int getETHMessage(unsigned char** msg, in_addr_t hostname,
 	unsigned char** udp_msg;
 
 	udp_msg = malloc(4);
-
+printf("ethMessage0\n");
 	total_size = 0;
 	dhcp_msg = from_mdhcp_to_message(mdhcp);
+printf("ethMessage1\n");
 	total_size = get_UDPhdr(udp_msg, dhcp_msg);
+printf("ethMessage2\n");
 	total_size = get_IPhdr(msg, hostname, *udp_msg, total_size);
+printf("ethMessage3\n");
 	free(*udp_msg);
 	free(udp_msg);
 	return total_size;
@@ -432,14 +431,50 @@ int getDhcpDiscoverOptions(char** opt) {
 }
 
 int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip){
+	int p, size;
+		u_int8_t magic_c[4];
+		u_int8_t msg_type[3];
+		u_int8_t serv_ident[6];
+		u_int8_t end_opt;
 
-return 0;
+		magic_c[0] = 99;
+		magic_c[1] = 130;
+		magic_c[2] = 83;
+		magic_c[3] = 99;
+
+		msg_type[0] = 0x35;
+		msg_type[1] = 0x1;
+		msg_type[2] = 0x3;
+
+		serv_ident[0] = 54;
+		serv_ident[1] = 4;
+		printf("peta!!\n");
+		memcpy(&serv_ident[2], &selected_ip->server_ip, 4);
+printf("pues no %d\n",(int)opt);
+
+		end_opt = 0xFF;
+
+		size = 64;
+		*opt = malloc(size);
+printf("aki tampoco \n");
+		bzero(*opt, size);
+		p = 0;
+		memcpy(*opt, magic_c, 4);
+		p += 4;
+		memcpy(*opt + p, msg_type, 3);
+		p += 3;
+		memcpy(*opt + p, serv_ident, 6);
+		p += 6;
+		memcpy(*opt + p, &end_opt, 1);
+		p += 1;
+
+		return size;
 }
 
 struct mdhcp_t* get_dhcpH_from_ethM(char * msg, int len){
 	int ip_udp_header_size = 28;
 	struct msg_dhcp_t dhcpM;
-	dhcpM.msg = msg + ip_udp_header_size;
+	dhcpM.msg = (unsigned char *)msg + ip_udp_header_size;
 	dhcpM.length = len - ip_udp_header_size;
 
 	return from_message_to_mdhcp(&dhcpM);

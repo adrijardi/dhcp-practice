@@ -5,23 +5,7 @@
  *      Author: dconde
  */
 
-#include <limits.h>
-#include <string.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <linux/if_ether.h>
-#include <net/ethernet.h>
-#include <netpacket/packet.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-
-#include "constants.h"
-#include "dhcp_state.h"
-#include "f_messages.h"
-#include "utils.h"
+#include "transfer.h"
 
 //Metodos internos
 int sendMSG(struct msg_dhcp_t *message);
@@ -55,6 +39,8 @@ int sendDHCPDISCOVER(){
 // Prueba
 	//print_mdhcp(dhcpdiscover); //TODO quitar
 
+	// Se controla que el lock esté abierto
+	pthread_mutex_lock(lock);
 	// Se envia el mensaje dhcp discover a broadcast
 	if(sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) >= 0){
 		//state = SELECTING; // TODO se necesita sincronización multihilo?
@@ -63,19 +49,29 @@ int sendDHCPDISCOVER(){
 		fprintf(stderr,"ERROR: No se ha podido mandar el mensaje dhcpdiscover.\n");
 	}
 
+	// Se libera el lock
+	pthread_mutex_unlock(lock);
+
 	free(options);
 	free_mdhcp(dhcpdiscover);
 
 	return ret;
 }
 
-int sendDHCPREQUEST(struct offerIP* selected_ip){
+void * sendDHCPREQUEST(void * arg){
 	int ret = EXIT_ERROR;
 	unsigned int xid;
 	double r;
 	struct mdhcp_t* dhcpRequest;
 	char ** options;
 	int opt_size;
+	struct offerIP selected_ip;
+
+	// Se copian los parámetros y se libera el lock
+printf("no llega\n");
+	memcpy( &selected_ip, arg, sizeof(struct offerIP));
+printf("llega\n");
+	pthread_mutex_unlock(lock_params);
 
 	printf("enviando dhcpRequest\n");
 	// Se genera un xid aleatorio
@@ -84,87 +80,36 @@ int sendDHCPREQUEST(struct offerIP* selected_ip){
 
 	// Se crea la estructura del mensaje con los datos adecuados
 	dhcpRequest = new_default_mdhcp();
+printf("yeah\n");
 	dhcpRequest->op = DHCP_OP_BOOTREQUEST;
 	dhcpRequest->hlen = 6;
 	dhcpRequest->xid = xid;
-	dhcpRequest->secs = 0; //TODO preguntar al profesor
+	dhcpRequest->secs = 0;
 	memcpy(dhcpRequest->chaddr, haddress, dhcpRequest->hlen);
 
-	options = malloc(4);
-	opt_size = getDhcpRequestOptions(options, selected_ip);
-	dhcpRequest->options= *options; //TODO mirar options?
-	dhcpRequest->opt_length = opt_size;
-// Prueba
-	//print_mdhcp(dhcpdiscover); //TODO quitar
+printf("yeah2\n");
 
-	// Se envia el mensaje dhcp discover a broadcast
+	options = malloc(4);
+	opt_size = getDhcpRequestOptions(options, &selected_ip);
+printf("yeah3\n");
+	dhcpRequest->options = (*options);
+	dhcpRequest->opt_length = opt_size;
+printf("aqui caca\n");
+
+	// Se envia el mensaje dhcp request a broadcast
 	if(sendETH_Msg(dhcpRequest, INADDR_BROADCAST) >= 0){
-		//state = SELECTING; // TODO se necesita sincronización multihilo?
 		ret = true;
 	}else{
-		fprintf(stderr,"ERROR: No se ha podido mandar el mensaje dhcprequest.\n");
+		fprintf(stderr,"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
 	}
+
+	printf("toca toca\n");
 
 	free(options);
 	free_mdhcp(dhcpRequest);
 
-	return ret;
+	return (void*)ret;
 }
-
-
-int sendMSG(struct msg_dhcp_t *message){
-	int ret = false;
-
-	/*switch(state){
-	case INIT:
-	case SELECTING:
-		ret = sendRAW_Msg(message);
-		break;
-	default:
-		ret = sendUDP_Msg(message);
-		break;
-	}*/
-
-	return ret;
-}
-
-/* ANTIGUO
-int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
-	struct sockaddr_in	addr; // Direccion de envio
-	unsigned char** msg;
-	size_t size;
-	int ret, sock, enviado;
-	ret = 0;
-
-	// Creamos el socket
-	sock = socket (PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
-	if(sock == -1){
-		perror("socket");
-		ret = -1;
-	}
-
-	// Definimos parametros de configuracion para el envio
-	///Se inicia la direccion de destino
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = address;
-	addr.sin_port = htons(SERVER_PORT);
-
-	/// Definimos el mensaje, inclusion de cabeceras...
-	msg = malloc(4);
-	size = getETHMessage(msg, address, dhcpStuct);
-	printf("El tamaño del pakete es %d\n", size);
-
-
-	// Se realiza el envio
-	enviado = sendto(sock, msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_in));
-	if(enviado == -1){
-		perror("sendto");
-		ret = -1;
-	}
-	printf("Enviado %d\n", enviado);
-
-	return ret;
-}*/
 
 int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 	struct sockaddr_ll	addr; // Direccion de envio
@@ -172,6 +117,8 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 	size_t size;
 	int ret, sock, enviado;
 	ret = 0;
+
+printf("creando sock eth\n");
 
 	// Creamos el socket
 	sock = socket (PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
@@ -204,12 +151,14 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address ){
 		ret = -1;
 	}
 
+printf("enviando mensaje eth\n");
+
 	if(ret >= 0){
 		/// Definimos el mensaje, inclusion de cabeceras...
 		msg = malloc(4);
 		size = getETHMessage(msg, address, dhcpStuct);
 		//printf("El tamaño del pakete es %d\n", size);
-
+printf("obtenido mensaje a enviar\n");
 
 		// Se realiza el envio
 		enviado = sendto(sock, *msg, size, 0, (struct sockaddr *)&addr, sizeof (struct sockaddr_ll));
@@ -240,7 +189,6 @@ int get_selecting_messages(struct mdhcp_t *** messages){
 		int num_dhcp = 0;
 
 		dhcp_recv = malloc(MAXDHCPOFFERS * sizeof(struct mdhcp_t));
-
 
 		// Creación del socket de recepción
 		sock_recv = socket (PF_PACKET, SOCK_DGRAM, htons(ETH_P_IP));
@@ -277,22 +225,17 @@ int get_selecting_messages(struct mdhcp_t *** messages){
 				if(ret < 0)
 					perror("bind");
 
-				/*int recv_size = recvfrom(sock_recv, buf, 1000, 0, NULL, NULL);
-				printf("%d\n",recv_size);
-
-				dhcp_recv = get_dhcpH_from_ethM(buf, recv_size);
-				printf("ipOrigen %d\n",dhcp_recv->siaddr);
-				printf("id %d\n",dhcp_recv->xid);*/
-
 				// Se establecen los sets de descriptores
 				FD_ZERO(&recvset);
 				FD_SET(sock_recv, &recvset);
 
+				// Se desbloquea el lock para que se envie el DhcpDiscover
+				pthread_mutex_unlock(lock);
 				//Recivimos multiples respuestas
 				ret = 1;
 				while(ret > 0 && num_dhcp < MAXDHCPOFFERS){
 					// Tiempo de espera del select - Hay que hacerlo en cada iteracción del buble
-					tv.tv_sec = 15; // TODO Cuanto tiempo hay que esperar?
+					tv.tv_sec = 5; // TODO Cuanto tiempo hay que esperar?
 					tv.tv_usec = 0;
 
 					ret = select(sock_recv+1,  &recvset,  NULL, NULL, &tv);
