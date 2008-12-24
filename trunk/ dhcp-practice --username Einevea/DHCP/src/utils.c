@@ -18,6 +18,7 @@
 
 #include "constants.h"
 #include "dhcp_state.h"
+#include "utils.h"
 
 char * getTimestamp(){
 	char* timestamp;
@@ -123,4 +124,15 @@ int obtain_ifindex(){
 	}
 
 	return ifr.ifr_ifru.ifru_ivalue;
+}
+
+struct offerIP* select_ip(struct mdhcp_t ** ip_list){
+	struct offerIP *oIp;
+
+	printf("Elegimos ip\n");
+
+	oIp = malloc(sizeof(struct offerIP));
+	oIp->offered_ip = (*ip_list)->yiaddr;
+	oIp->server_ip = (*ip_list)->siaddr;
+	return oIp;
 }

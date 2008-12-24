@@ -8,7 +8,11 @@
 #ifndef TRANSFER_H_
 #define TRANSFER_H_
 
+#include "f_messages.h"
+
 int sendDHCPDISCOVER();
+int sendDHCPREQUEST(struct offerIP* selected_ip);
+int get_selecting_messages(struct mdhcp_t *** messages);
 
 
 
