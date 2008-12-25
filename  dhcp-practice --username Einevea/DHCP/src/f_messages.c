@@ -240,14 +240,12 @@ int getETHMessage(unsigned char** msg, in_addr_t hostname,
 	unsigned char** udp_msg;
 
 	udp_msg = malloc(4);
-printf("ethMessage0\n");
+
 	total_size = 0;
 	dhcp_msg = from_mdhcp_to_message(mdhcp);
-printf("ethMessage1\n");
 	total_size = get_UDPhdr(udp_msg, dhcp_msg);
-printf("ethMessage2\n");
 	total_size = get_IPhdr(msg, hostname, *udp_msg, total_size);
-printf("ethMessage3\n");
+
 	free(*udp_msg);
 	free(udp_msg);
 	return total_size;
@@ -367,8 +365,6 @@ int getDhcpDiscoverOptions(char** opt) {
 	int p, size;
 	u_int8_t magic_c[4];
 	u_int8_t msg_type[3];
-	//u_int8_t host_name[14];
-	//u_int8_t param_req[13];
 	u_int8_t end_opt;
 
 	magic_c[0] = 99;
@@ -379,35 +375,6 @@ int getDhcpDiscoverOptions(char** opt) {
 	msg_type[0] = 0x35;
 	msg_type[1] = 0x1;
 	msg_type[2] = 0x1;
-
-	/*host_name[0] = 0x0C;
-	host_name[1] = 0x0C;
-	host_name[2] = 0x61;
-	host_name[3] = 0x64;
-	host_name[4] = 0x72;
-	host_name[5] = 0x69;
-	host_name[6] = 0x2D;
-	host_name[7] = 0x64;
-	host_name[8] = 0x65;
-	host_name[9] = 0x73;
-	host_name[10] = 0x6B;
-	host_name[11] = 0x74;
-	host_name[12] = 0x6F;
-	host_name[13] = 0x70;
-
-	param_req[0] = 0x37;
-	param_req[1] = 0x0B;
-	param_req[2] = 0x01;
-	param_req[3] = 0x1C;
-	param_req[4] = 0x02;
-	param_req[5] = 0x03;
-	param_req[6] = 0x0F;
-	param_req[7] = 0x06;
-	param_req[8] = 0x77;
-	param_req[9] = 0x0C;
-	param_req[10] = 0x2C;
-	param_req[11] = 0x2F;
-	param_req[12] = 0x1A;*/
 
 	end_opt = 0xFF;
 
@@ -420,10 +387,6 @@ int getDhcpDiscoverOptions(char** opt) {
 	p += 4;
 	memcpy(*opt + p, msg_type, 3);
 	p += 3;
-	/*memcpy(*opt + p, &host_name, 14);
-	p += 14;
-	memcpy(*opt + p, &param_req, 13);
-	p += 13;*/
 	memcpy(*opt + p, &end_opt, 1);
 	p += 1;
 
@@ -448,15 +411,13 @@ int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip){
 
 		serv_ident[0] = 54;
 		serv_ident[1] = 4;
-		printf("peta!!\n");
 		memcpy(&serv_ident[2], &selected_ip->server_ip, 4);
-printf("pues no %d\n",(int)opt);
 
 		end_opt = 0xFF;
 
 		size = 64;
 		*opt = malloc(size);
-printf("aki tampoco \n");
+
 		bzero(*opt, size);
 		p = 0;
 		memcpy(*opt, magic_c, 4);
