@@ -52,7 +52,7 @@ int main(int argc, const char* argv[]) {
 		printTrace(0, PID, NULL);
 		getFileParams();
 		initialize();
-printf("inicializado\n");
+		printf("inicializado\n");
 		run();
 		clean_close();
 	}
@@ -71,7 +71,7 @@ void run() {
 
 		//Se lanza un nuevo hilo para el envio
 		pthread_attr_init(&hilo_attr);
-		if(pthread_create(&hilo, &hilo_attr, init, NULL) < 0) //TODO mirar valor de retorno
+		if (pthread_create(&hilo, &hilo_attr, init, NULL) < 0) //TODO mirar valor de retorno
 			perror("pthread_create");
 
 		result = selecting();
@@ -79,18 +79,19 @@ void run() {
 		// Se espera por el hilo de envio
 		pthread_join(hilo, NULL);
 
-			if (result >= 0) {
-				isbound = requesting();
-			} else {
-				//TODO
-				printf("Error 1\n");
-				exit(-1);
-			}
-		/*} else {
+		if (result >= 0) {
+			if(requesting() >= 0)
+				isbound = 1;
+		} else {
 			//TODO
-			printf("Error 2\n");
+			printf("Error 1\n");
 			exit(-1);
-		}*/
+		}
+		/*} else {
+		 //TODO
+		 printf("Error 2\n");
+		 exit(-1);
+		 }*/
 	}
 	bound();
 }
@@ -108,7 +109,7 @@ int selecting() {
 	struct mdhcp_t *** dhcpMessages;
 	int numMessages;
 	struct offerIP *selected_ip;
-	int ret;
+	int ret = 0;
 	pthread_t hilo;
 	pthread_attr_t hilo_attr;
 
@@ -118,10 +119,10 @@ int selecting() {
 
 	// Recive los mensaje Offer
 	numMessages = get_selecting_messages(dhcpMessages);
-	if(numMessages > 0){
+	if (numMessages > 0) {
 		//Elegimos ip - no se requiere reservar espacio, se reserva dentro
-		selected_ip = select_ip( *dhcpMessages);
-	printf("termina selección ip\n");
+		selected_ip = select_ip(*dhcpMessages);
+		printf("termina selección ip\n");
 		free(dhcpMessages);
 
 		// Envia dhcp request
@@ -130,37 +131,38 @@ int selecting() {
 		pthread_mutex_lock(lock);
 		pthread_mutex_lock(lock_params);
 
-	printf("se crea hilo\n");
+		printf("se crea hilo\n");
 		//Se lanza un nuevo hilo para el envio
 		pthread_attr_init(&hilo_attr);
-		if(pthread_create(&hilo, &hilo_attr, sendDHCPREQUEST, (void *)selected_ip) < 0) //TODO mirar valor de retorno
+		if (pthread_create(&hilo, &hilo_attr, sendDHCPREQUEST,
+				(void *) selected_ip) < 0) //TODO mirar valor de retorno
 			perror("pthread_create");
 
 		pthread_mutex_lock(lock_params);
 		free(selected_ip);
 		pthread_mutex_unlock(lock_params);
-
-		//ret = sendDHCPREQUEST(selected_ip);
-		if(ret < 0){
-			//TODO oooo
-		}
-		else{
-			// En caso de que no haya mensajes
-			printf("No se han recibido mensajes DHCPOFFER");
-			ret = -1;
-		}
 	}
-
-
 	return ret;
 }
 
 int requesting() {
+	int ret = 0;
+	int ack_ok;
+
 	printf("En requesting\n");
+
+	// Recive los mensaje Offer
+	ack_ok = get_ACK_message();
+	if (ack_ok > 0) {
+
+		// Establece la ip del dispositivo con ioctl
+	}
+	return ret;
+
 	//Escuchamos lo que venga
 	//Enviamos dhcpAck dhcpNAck
 	//Si falta algo mas tambien lo hacemos
-	return true;
+
 }
 
 int bound() {
@@ -176,22 +178,24 @@ void clean_close() {
 }
 
 int initialize() {
+	int ret = 0;
 	// Se inicializan los parametros del estado.
 	state = INIT;
 	lock = malloc(sizeof(pthread_mutex_t));
 	lock_params = malloc(sizeof(pthread_mutex_t));
-	if(pthread_mutex_init(lock, NULL) < 0){
+	if (pthread_mutex_init(lock, NULL) < 0) {
 		perror("pthread_mutex_init");
 		exit(-1);
 	}
-	if(pthread_mutex_init(lock_params, NULL) < 0){
+	if (pthread_mutex_init(lock_params, NULL) < 0) {
 		perror("pthread_mutex_init");
 		exit(-1);
 	}
 	haddress = NULL;
 	haddress_size = 6;
 	obtainHardwareAddress();
-	return EXIT_NORMAL; //TODO
+	ret = init_sockets();
+	return ret;
 }
 
 void getFileParams() {
