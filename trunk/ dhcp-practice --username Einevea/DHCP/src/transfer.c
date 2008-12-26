@@ -57,6 +57,10 @@ int init_sockets() {
 	return ret;
 }
 
+void close_sockets(){
+	close(sock_packet);
+}
+
 int sendDHCPDISCOVER() {
 	int ret = EXIT_ERROR;
 	unsigned int xid;
@@ -79,6 +83,7 @@ int sendDHCPDISCOVER() {
 
 	options = malloc(4);
 	opt_size = getDhcpDiscoverOptions(options);
+	//memcpy(&dhcpdiscover->options, *options, opt_size);
 	dhcpdiscover->options = *options; //TODO mirar options?
 	dhcpdiscover->opt_length = opt_size;
 	// Prueba
@@ -98,6 +103,7 @@ int sendDHCPDISCOVER() {
 	// Se libera el lock
 	pthread_mutex_unlock(lock);
 
+	free(*options);
 	free(options);
 	free_mdhcp(dhcpdiscover);
 
@@ -141,10 +147,10 @@ void * sendDHCPREQUEST(void * arg) {
 	if (sendETH_Msg(dhcpRequest, INADDR_BROADCAST) >= 0) {
 		ret = true;
 	} else {
-		fprintf(stderr,
-				"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
+		fprintf(stderr,	"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
 	}
 
+	free(*options);
 	free(options);
 	free_mdhcp(dhcpRequest);
 
@@ -181,15 +187,12 @@ int sendUDP_Msg(struct mdhcp_t *message, in_addr_t address) {
 }
 
 // Recive todos los mensajes de dhcpOffer
-int get_selecting_messages(struct mdhcp_t *** messages) {
+int get_selecting_messages(struct mdhcp_t messages[]) {
 	fd_set recvset;
 	struct timeval tv;
 	int ret = 1;
 	char * buf = malloc(1000); //TODO
-	struct mdhcp_t **dhcp_recv;
 	int num_dhcp = 0;
-
-	dhcp_recv = malloc(MAXDHCPOFFERS * sizeof(struct mdhcp_t));
 
 	// Se establecen los sets de descriptores
 	FD_ZERO(&recvset);
@@ -210,15 +213,15 @@ int get_selecting_messages(struct mdhcp_t *** messages) {
 			int recv_size = recvfrom(sock_packet, buf, 1000, 0, NULL, NULL);
 			printf("recibido %d\n",recv_size);
 
-			*(dhcp_recv + num_dhcp*sizeof(struct mdhcp_t)) = get_dhcpH_from_ethM(buf, recv_size);
+			get_dhcpH_from_ethM(&messages[num_dhcp], buf, recv_size);
 			num_dhcp++;
 
-			printf("ipOrigen %d\n",(*dhcp_recv)->siaddr);
-			printf("id %d\n",(*dhcp_recv)->xid);
+			printf("ipOrigen %d\n",messages[0].siaddr);
+			printf("id %d\n",messages[0].xid);
 		}
 	}
-	*messages = dhcp_recv;
 	ret = num_dhcp;
+	free(buf);
 
 	return ret;
 }
@@ -228,10 +231,8 @@ int get_ACK_message() {
 	struct timeval tv;
 	int ret = 1;
 	char * buf = malloc(1000); //TODO
-	struct mdhcp_t **dhcp_recv;
+	struct mdhcp_t dhcp_recv;
 	int num_dhcp = 0;
-
-	dhcp_recv = malloc(sizeof(struct mdhcp_t));
 
 	// Se establecen los sets de descriptores
 	FD_ZERO(&recvset);
@@ -252,15 +253,16 @@ int get_ACK_message() {
 			int recv_size = recvfrom(sock_packet, buf, 1000, 0, NULL, NULL);
 			printf("recibido %d\n",recv_size);
 
-			*(dhcp_recv + num_dhcp*sizeof(struct mdhcp_t)) = get_dhcpH_from_ethM(buf, recv_size);
+			get_dhcpH_from_ethM(&dhcp_recv, buf, recv_size);
 			num_dhcp++;
 
-			printf("ipOrigen %d\n",(*dhcp_recv)->siaddr);
-			printf("id %d\n",(*dhcp_recv)->xid);
+			printf("ipOrigen %d\n",dhcp_recv.siaddr);
+			printf("id %d\n",dhcp_recv.xid);
 			// TODO hay que ver que el mensaje sea ACK y no otra mierda
 		}
 	}
 	ret = num_dhcp;
+	free(buf);
 
 	return ret;
 }

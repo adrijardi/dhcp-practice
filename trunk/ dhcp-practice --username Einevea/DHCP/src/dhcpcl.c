@@ -4,23 +4,7 @@
  *  Created on: 17-oct-2008
  *      Author: dconde
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <sys/socket.h>
-#include <linux/if_ether.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <netpacket/packet.h>
-
 #include "dhcpcl.h"
-#include "constants.h"
-#include "utils.h"
-#include "pruebas/pruebas.h"
-#include "dhcp_state.h"
-#include "transfer.h"
-#include "f_messages.h"
 
 //DECLARACION DE METODOS INTERNOS
 void printParamsError(int err);
@@ -35,6 +19,7 @@ int requesting();
 int bound();
 void clean_close();
 void run();
+void finalize_all();
 
 void pruebas() {
 	//pruebaFormatoMsg();
@@ -54,7 +39,7 @@ int main(int argc, const char* argv[]) {
 		initialize();
 		printf("inicializado\n");
 		run();
-		clean_close();
+		finalize_all();
 	}
 	return exit_value;
 }
@@ -106,14 +91,12 @@ void *init(void *arg) {
 }
 
 int selecting() {
-	struct mdhcp_t *** dhcpMessages;
+	struct mdhcp_t dhcpMessages[MAXDHCPOFFERS];
 	int numMessages;
 	struct offerIP *selected_ip;
 	int ret = 0;
 	pthread_t hilo;
 	pthread_attr_t hilo_attr;
-
-	dhcpMessages = malloc(4);
 
 	printf("En selecting\n");
 
@@ -121,9 +104,9 @@ int selecting() {
 	numMessages = get_selecting_messages(dhcpMessages);
 	if (numMessages > 0) {
 		//Elegimos ip - no se requiere reservar espacio, se reserva dentro
-		selected_ip = select_ip(*dhcpMessages);
+		selected_ip = select_ip(dhcpMessages);
+		selected_address = selected_ip->offered_ip;
 		printf("termina selección ip\n");
-		free(dhcpMessages);
 
 		// Envia dhcp request
 
@@ -154,8 +137,8 @@ int requesting() {
 	// Recive los mensaje Offer
 	ack_ok = get_ACK_message();
 	if (ack_ok > 0) {
-
 		// Establece la ip del dispositivo con ioctl
+		set_device_ip(iface, selected_address);
 	}
 	return ret;
 
@@ -171,10 +154,6 @@ int bound() {
 	//escuchar señales
 	//Si recive señal se envia DHCPRELEASE ??
 	return true;
-}
-
-void clean_close() {
-	free(haddress);
 }
 
 int initialize() {
@@ -310,5 +289,15 @@ void printParamsError(int err) {
 	default:
 		break;
 	}
+}
+
+void finalize_all(){
+	close_sockets();
+	free(lock);
+	free(lock_params);
+	//free(iface);
+	free(hostname);
+	free(address);
+	free(haddress);
 }
 

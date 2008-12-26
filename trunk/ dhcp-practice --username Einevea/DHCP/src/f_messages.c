@@ -107,64 +107,63 @@ struct mdhcp_t* new_default_mdhcp() {
 	return ret;
 }
 
-struct mdhcp_t* from_message_to_mdhcp(struct msg_dhcp_t *message) {
+int from_message_to_mdhcp(struct mdhcp_t * dhcp, struct msg_dhcp_t *message) {
 	int p, osize, iaux;
 	short saux;
-	struct mdhcp_t *ret;
+	int ret = 0;
 	unsigned char *msg;
 
-	ret = malloc(sizeof(struct mdhcp_t));
 	msg = message->msg;
 	osize = message->length - DHCP_BSIZE;
 
 	p = 0;
-	memcpy(&ret->op, msg, 1);
+	memcpy(&dhcp->op, msg, 1);
 	p += 1;
-	memcpy(&ret->htype, msg + p, 1);
+	memcpy(&dhcp->htype, msg + p, 1);
 	p += 1;
-	memcpy(&ret->hlen, msg + p, 1);
+	memcpy(&dhcp->hlen, msg + p, 1);
 	p += 1;
-	memcpy(&ret->hops, msg + p, 1);
+	memcpy(&dhcp->hops, msg + p, 1);
 	p += 1;
 	memcpy(&iaux, msg + p, 4);
-	ret->xid = ntohl(iaux);
+	dhcp->xid = ntohl(iaux);
 	p += 4;
 	memcpy(&saux, msg + p, 2);
-	ret->secs = ntohs(saux);
+	dhcp->secs = ntohs(saux);
 	p += 2;
 	memcpy(&saux, msg + p, 2);
-	ret->flags = ntohs(saux);
+	dhcp->flags = ntohs(saux);
 	p += 2;
 	memcpy(&iaux, msg + p, 4);
-	ret->ciaddr = ntohl(iaux);
+	dhcp->ciaddr = ntohl(iaux);
 	p += 4;
 	memcpy(&iaux, msg + p, 4);
-	ret->yiaddr = ntohl(iaux);
+	dhcp->yiaddr = ntohl(iaux);
 	p += 4;
 	memcpy(&iaux, msg + p, 4);
-	ret->siaddr = ntohl(iaux);
+	dhcp->siaddr = ntohl(iaux);
 	p += 4;
 	memcpy(&iaux, msg + p, 4);
-	ret->giaddr = ntohl(iaux);
+	dhcp->giaddr = ntohl(iaux);
 	p += 4;
-	memcpy(&ret->chaddr, msg + p, 16);
+	memcpy(&dhcp->chaddr, msg + p, 16);
 	p += 16;
-	memcpy(&ret->sname, msg + p, 64);
+	memcpy(&dhcp->sname, msg + p, 64);
 	p += 64;
-	memcpy(&ret->file, msg + p, 128);
+	memcpy(&dhcp->file, msg + p, 128);
 	p += 128;
-	ret->opt_length = osize;
+	dhcp->opt_length = osize;
 	if (osize > 0) {
-		ret->options = malloc(osize);
-		memcpy(ret->options, msg + p, osize);
+		dhcp->options = malloc(osize);
+		memcpy(dhcp->options, msg + p, osize);
 	}
 
 	return ret;
 }
 
 void free_mdhcp(struct mdhcp_t *str_dhcp) {
-	//if (str_dhcp->opt_length > 0)
-		free(str_dhcp->options);
+	if (str_dhcp->opt_length > 0)
+		//free(str_dhcp->options);
 	free(str_dhcp);
 }
 void free_message(struct msg_dhcp_t *message) {
@@ -432,11 +431,11 @@ int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip){
 		return size;
 }
 
-struct mdhcp_t* get_dhcpH_from_ethM(char * msg, int len){
+int get_dhcpH_from_ethM(struct mdhcp_t * dhcp, char * msg, int len){
 	int ip_udp_header_size = 28;
 	struct msg_dhcp_t dhcpM;
 	dhcpM.msg = (unsigned char *)msg + ip_udp_header_size;
 	dhcpM.length = len - ip_udp_header_size;
 
-	return from_message_to_mdhcp(&dhcpM);
+	return from_message_to_mdhcp(dhcp, &dhcpM);
 }

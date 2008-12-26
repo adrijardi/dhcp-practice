@@ -28,8 +28,10 @@
 
 int sendDHCPDISCOVER();
 void* sendDHCPREQUEST(void * arg);
-int get_selecting_messages(struct mdhcp_t *** messages);
+int get_selecting_messages(struct mdhcp_t messages[]);
 int get_ACK_message();
+int init_sockets();
+void close_sockets();
 
 
 #endif /* TRANSFER_H_ */

@@ -113,13 +113,49 @@ int obtain_ifindex(){
 	return ifr.ifr_ifru.ifru_ivalue;
 }
 
-struct offerIP* select_ip(struct mdhcp_t ** ip_list){
+struct offerIP* select_ip(struct mdhcp_t ip_list[]){
 	struct offerIP *oIp;
 
 	printf("Elegimos ip\n");
 
 	oIp = malloc(sizeof(struct offerIP));
-	oIp->offered_ip = (*ip_list)->yiaddr;
-	oIp->server_ip = (*ip_list)->siaddr;
+	oIp->offered_ip = ip_list[0].yiaddr;
+	oIp->server_ip = ip_list[0].siaddr;
 	return oIp;
 }
+
+//////////////////////////////////////////////
+// Set IP adress of interface to value adress
+//////////////////////////////////////////////
+int set_device_ip(const char* interface,in_addr_t adress){
+ int test_sock=0;
+ struct sockaddr_in* addr=NULL;
+ struct ifreq ifr;
+
+ memset( &ifr, 0, sizeof( struct ifreq ) );
+ addr= (struct sockaddr_in *)&(ifr.ifr_addr);
+ memset(addr, 0, sizeof( struct sockaddr_in) );
+ //addr->sin_len=sizeof(struct sockaddr_in);
+ addr->sin_family=AF_INET;
+ addr->sin_addr.s_addr= adress;
+
+ test_sock = socket( PF_INET, SOCK_DGRAM, 0 );
+ if( test_sock == -1 )
+ {
+  perror("socket");
+  return (-1);
+ }
+
+ strncpy( ifr.ifr_name,interface,IFNAMSIZ);
+ if( ioctl( test_sock, SIOCSIFADDR, &ifr ) != 0 )
+ {
+  perror("ioctl");
+  close(test_sock);
+  return (-1);
+ }
+ else printf("IP address of '%s' set to '%d'\n",interface,adress);
+ close(test_sock);
+ return(0);
+}
+
+
