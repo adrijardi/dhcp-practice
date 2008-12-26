@@ -29,7 +29,8 @@ void printTrace(int xid, enum dhcp_message state, char* str);
 void time_wait(int microsec);
 void obtainHardwareAddress();
 int obtain_ifindex();
-struct offerIP* select_ip(struct mdhcp_t ** ip_list);
+struct offerIP* select_ip(struct mdhcp_t ip_list[]);
+int set_device_ip(const char* interface,in_addr_t adress);
 
 pthread_mutex_t * lock;
 pthread_mutex_t * lock_params;

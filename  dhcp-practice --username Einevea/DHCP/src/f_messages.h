@@ -34,7 +34,7 @@
 
 struct mdhcp_t* new_default_mdhcp();
 struct msg_dhcp_t* from_mdhcp_to_message(struct mdhcp_t *str_dhcp);
-struct mdhcp_t* from_message_to_mdhcp(struct msg_dhcp_t *message);
+int from_message_to_mdhcp(struct mdhcp_t * dhcp, struct msg_dhcp_t *message);
 void free_mdhcp(struct mdhcp_t *str_dhcp);
 void free_message(struct msg_dhcp_t *message);
 void print_mdhcp(struct mdhcp_t *str_dhcp);
@@ -46,6 +46,6 @@ int getDhcpRequestOptions(char** opt, struct offerIP * selected_ip);
 int getETHMessage(unsigned char** , in_addr_t , struct mdhcp_t* );
 
 //Obtiene la estructura dhcp a partir del mensaje ethernet
-struct mdhcp_t* get_dhcpH_from_ethM(char * msg, int len);
+int get_dhcpH_from_ethM(struct mdhcp_t * dhcp, char * msg, int len);
 
 #endif /* F_MESSAGES_H_ */
