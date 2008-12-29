@@ -35,6 +35,8 @@ int main(int argc, const char* argv[]) {
 	signal(SIGUSR2, SIGUSR2_controller);
 	debug = DEBUG_OFF;
 	no_exit = true;
+	lease = 0xffffffff;
+	//TODO faltan mas parametros por defecto.
 	exit_value = checkParams(argc, argv);
 	//pruebas();//TODO quitar
 	if (exit_value == 0) {
@@ -230,6 +232,7 @@ int checkParams(int argc, const char* argv[]) {
 					//Se asigna el parametro de lease
 					lease = strtol(argv[i + 1], &errPtr, 0);
 					//Se comprueba que no haya habido un error de formato
+					//TODO falta comprobar cuando mandan inf hay que poner lease = 0xffffffff;
 					if (strlen(errPtr) != 0) {
 						printParamsError(2);
 						ret = EXIT_ERROR;
