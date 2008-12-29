@@ -155,7 +155,7 @@ int set_device_ip(const char* interface,struct in_addr ip_address){
  }
  else{
 	 printf("IP address of '%s' set to '%d'\n",interface,ip_address.s_addr);
-	 printf("pos:%s",inet_ntoa(ip_address));
+	 printf("pos:%s\n",inet_ntoa(ip_address));
  }
  close(test_sock);
  return(0);
