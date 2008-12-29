@@ -161,10 +161,23 @@ int sendDHCPRELEASE(){
 	struct mdhcp_t * dhcp_msg;
 	struct msg_dhcp_t * msg;
 	int ret;
+	int r, xid;
 
 	printf("En DHCPRELEASE\n");
 
 	dhcp_msg = new_default_mdhcp();
+
+	// Se genera un xid aleatorio
+	r = (double) random() / (double) RAND_MAX;
+	xid = UINT_MAX * r;
+
+	// Se crea la estructura del mensaje con los datos adecuados
+	dhcp_msg->op = DHCP_OP_BOOTREQUEST;
+	dhcp_msg->hlen = 6;
+	dhcp_msg->xid = xid;
+	dhcp_msg->secs = 0;
+	memcpy(&dhcp_msg->ciaddr, &selected_address.s_addr, sizeof(in_addr_t));
+	memcpy(dhcp_msg->chaddr, haddress, dhcp_msg->hlen);
 
 	msg = from_mdhcp_to_message(dhcp_msg);
 
@@ -206,7 +219,7 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 	else{
 		addr_inet.sin_addr = *ip_address;
 		addr_inet.sin_family = AF_INET;
-		addr_inet.sin_port = SERVER_PORT;
+		addr_inet.sin_port = htons(SERVER_PORT);
 
 		ret = sendto(sock_inet, msg, len, 0, (struct sockaddr*)&addr_inet, sizeof(struct sockaddr_in));
 		// TODO si ret no es igual al tamaño reenviar el resto
