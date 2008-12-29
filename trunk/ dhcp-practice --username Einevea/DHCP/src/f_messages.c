@@ -364,6 +364,7 @@ int getDhcpDiscoverOptions(char** opt) {
 	int p, size;
 	u_int8_t magic_c[4];
 	u_int8_t msg_type[3];
+	u_int8_t msg_lease[6];
 	u_int8_t end_opt;
 
 	magic_c[0] = 99;
@@ -374,6 +375,14 @@ int getDhcpDiscoverOptions(char** opt) {
 	msg_type[0] = 0x35;
 	msg_type[1] = 0x1;
 	msg_type[2] = 0x1;
+
+	msg_lease[0] = 51;
+	msg_lease[1] = 4;
+	msg_lease[2] = lease;
+	msg_lease[3] = lease << 4;
+	msg_lease[4] = lease << 4;
+	msg_lease[5] = lease << 4;
+
 
 	end_opt = 0xFF;
 
@@ -386,6 +395,8 @@ int getDhcpDiscoverOptions(char** opt) {
 	p += 4;
 	memcpy(*opt + p, msg_type, 3);
 	p += 3;
+	memcpy(*opt + p, msg_lease, 6);
+	p += 6;
 	memcpy(*opt + p, &end_opt, 1);
 	p += 1;
 

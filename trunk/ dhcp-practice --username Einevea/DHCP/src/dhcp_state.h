@@ -11,7 +11,8 @@
 
 char *iface, *hostname, *address, *haddress;
 enum dhcp_states state;
-int exit_value, timeout, lease, debug, haddress_size, dhcp_socket, no_exit;
+int exit_value, timeout, debug, haddress_size, dhcp_socket, no_exit;
+u_int32_t lease;
 struct in_addr selected_address;
 
 #endif /* DHCP_STATE_H_ */
