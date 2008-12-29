@@ -127,7 +127,7 @@ struct offerIP* select_ip(struct mdhcp_t ip_list[]){
 //////////////////////////////////////////////
 // Set IP adress of interface to value adress
 //////////////////////////////////////////////
-int set_device_ip(const char* interface,in_addr_t adress){
+int set_device_ip(const char* interface,struct in_addr ip_address){
  int test_sock=0;
  struct sockaddr_in* addr=NULL;
  struct ifreq ifr;
@@ -137,7 +137,7 @@ int set_device_ip(const char* interface,in_addr_t adress){
  memset(addr, 0, sizeof( struct sockaddr_in) );
  //addr->sin_len=sizeof(struct sockaddr_in);
  addr->sin_family=AF_INET;
- addr->sin_addr.s_addr= adress;
+ addr->sin_addr.s_addr= ip_address.s_addr;
 
  test_sock = socket( PF_INET, SOCK_DGRAM, 0 );
  if( test_sock == -1 )
@@ -153,7 +153,10 @@ int set_device_ip(const char* interface,in_addr_t adress){
   close(test_sock);
   return (-1);
  }
- else printf("IP address of '%s' set to '%d'\n",interface,adress);
+ else{
+	 printf("IP address of '%s' set to '%d'\n",interface,ip_address.s_addr);
+	 printf("pos:%s",inet_ntoa(ip_address));
+ }
  close(test_sock);
  return(0);
 }
