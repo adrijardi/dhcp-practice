@@ -410,6 +410,7 @@ int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip){
 		u_int8_t magic_c[4];
 		u_int8_t msg_type[3];
 		u_int8_t serv_ident[6];
+		u_int8_t msg_lease[6];
 		u_int8_t end_opt;
 
 		magic_c[0] = 99;
@@ -420,6 +421,16 @@ int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip){
 		msg_type[0] = 0x35;
 		msg_type[1] = 0x1;
 		msg_type[2] = 0x3;
+
+		msg_lease[0] = 51;
+		msg_lease[1] = 4;
+		msg_lease[2] = lease;
+		lease = lease >> 8;
+		msg_lease[3] = lease;
+		lease = lease >> 8;
+		msg_lease[4] = lease;
+		lease = lease >> 8;
+		msg_lease[5] = lease;
 
 		serv_ident[0] = 54;
 		serv_ident[1] = 4;
@@ -436,6 +447,8 @@ int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip){
 		p += 4;
 		memcpy(*opt + p, msg_type, 3);
 		p += 3;
+		memcpy(*opt + p, msg_lease, 6);
+		p += 6;
 		memcpy(*opt + p, serv_ident, 6);
 		p += 6;
 		memcpy(*opt + p, &end_opt, 1);

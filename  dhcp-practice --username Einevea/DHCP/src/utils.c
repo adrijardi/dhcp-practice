@@ -115,12 +115,119 @@ int obtain_ifindex(){
 
 struct offerIP* select_ip(struct mdhcp_t ip_list[]){
 	struct offerIP *oIp;
-
-	printf("Elegimos ip\n");
+	struct sockaddr *snM;
+	struct in_addr* roL;
+	struct in_addr* dnL;
+	struct in_addr* seA;
+	char * doN;
+	int case_;
+	int p, i, h, size;
+	u_int32_t aux32;
 
 	oIp = malloc(sizeof(struct offerIP));
+	snM = malloc(sizeof(struct sockaddr));
+
 	oIp->offered_ip = ip_list[0].yiaddr;
 	oIp->server_ip = ip_list[0].siaddr;
+	oIp->subnet_mask = snM;
+	oIp->routers_list = NULL;
+	oIp->domain_name_server_list = NULL;
+	oIp->domain_name = NULL;
+	oIp->server_address = NULL;
+
+	while(p < ip_list[0].opt_length){
+		case_ = ip_list[0].options[p++];
+		switch(case_){
+		case 1:
+			//Subnet Mask
+			h = ip_list[0].options[p++];
+			i = 0;
+			while(i < h){
+				snM->sa_data[i] = ip_list[0].options[p++];
+				i++;
+			}
+			break;
+		case 3:
+			//Router List
+			h = ip_list[0].options[p++];
+			size = sizeof(struct in_addr);
+			roL = malloc(size * (h/4));
+			oIp->routers_list = roL;
+			i = 0;
+			aux32 = 0;
+			while(i < h){
+				aux32 = aux32 << 8;
+				aux32 += ip_list[0].options[p++];
+				if(((i+1)%4)== 0){
+					aux32 = 0;
+					(roL+(i/4)*size)->s_addr = aux32;
+				}
+				i++;
+			}
+			break;
+		case 6:
+			//Domain Name Server
+			h = ip_list[0].options[p++];
+			size = sizeof(struct in_addr);
+			dnL = malloc(size * (h/4));
+			oIp->domain_name_server_list = dnL;
+			i = 0;
+			aux32 = 0;
+			while(i < h){
+				aux32 = aux32 << 8;
+				aux32 += ip_list[0].options[p++];
+				if(((i+1)%4)== 0){
+					aux32 = 0;
+					(dnL+(i/4)*size)->s_addr = aux32;
+				}
+				i++;
+			}
+			break;
+		case 15:
+			//Domain Name
+			h = ip_list[0].options[p++];
+			doN = malloc(h);
+			oIp->domain_name = doN;
+			i = 0;
+			while(i < h){
+				doN[i] = ip_list[0].options[p++];
+				i++;
+			}
+			break;
+		case 51:
+			//Lease time
+			h = ip_list[0].options[p++];
+			i = 0;
+			aux32 = 0;
+			while(i < h){
+				aux32 = aux32 << 8;
+				aux32 += ip_list[0].options[p++];
+				i++;
+			}
+			oIp->lease = aux32;
+			break;
+		case 53:
+			//Type
+			break;
+		case 54:
+			//Server Identifier
+			h = ip_list[0].options[p++];
+			seA = malloc(sizeof(struct in_addr));
+			oIp->server_address = seA;
+			i = 0;
+			aux32 = 0;
+			while(i < h){
+				aux32 = aux32 << 8;
+				aux32 += ip_list[0].options[p++];
+				i++;
+			}
+			break;
+		case 255:
+			//End Options
+			break;
+		}
+	}
+
 	return oIp;
 }
 
