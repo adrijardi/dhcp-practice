@@ -40,8 +40,8 @@ int init_sockets() {
 		if (addr_packet.sll_ifindex < 0)
 			ret = -1;
 		addr_packet.sll_hatype = 0xFFFF;
-		addr_packet.sll_protocol = htons(ETH_P_IP); //TODO raro que funcione con ese htons
-		addr_packet.sll_pkttype = PACKET_BROADCAST; // TODO no estoy seguro del broadcast
+		addr_packet.sll_protocol = htons(ETH_P_IP);
+		addr_packet.sll_pkttype = PACKET_BROADCAST;
 
 		if (addr_packet.sll_ifindex == -1) {
 			ret = -1;
@@ -63,7 +63,6 @@ void close_sockets(){
 
 int sendDHCPDISCOVER() {
 	int ret = EXIT_ERROR;
-	unsigned int xid;
 	double r;
 	struct mdhcp_t* dhcpdiscover;
 	char ** options;
@@ -93,7 +92,7 @@ int sendDHCPDISCOVER() {
 	pthread_mutex_lock(lock);
 	// Se envia el mensaje dhcp discover a broadcast
 	if (sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) >= 0) {
-		//state = SELECTING; // TODO se necesita sincronización multihilo?
+		printTrace(xid, DHCPDISCOVER, NULL);
 		ret = true;
 	} else {
 		fprintf(stderr,
@@ -112,8 +111,6 @@ int sendDHCPDISCOVER() {
 
 void * sendDHCPREQUEST(void * arg) {
 	int ret = EXIT_ERROR;
-	unsigned int xid;
-	double r;
 	struct mdhcp_t* dhcpRequest;
 	char ** options;
 	int opt_size;
@@ -125,9 +122,6 @@ void * sendDHCPREQUEST(void * arg) {
 	pthread_mutex_unlock(lock_params);
 
 	printf("enviando dhcpRequest\n");
-	// Se genera un xid aleatorio
-	r = (double) random() / (double) RAND_MAX;
-	xid = UINT_MAX * r;
 
 	// Se crea la estructura del mensaje con los datos adecuados
 	dhcpRequest = new_default_mdhcp();
@@ -145,6 +139,7 @@ void * sendDHCPREQUEST(void * arg) {
 
 	// Se envia el mensaje dhcp request a broadcast
 	if (sendETH_Msg(dhcpRequest, INADDR_BROADCAST) >= 0) {
+		printTrace(xid, DHCPREQUEST, inet_ntoa(server_address));
 		ret = true;
 	} else {
 		fprintf(stderr,	"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
@@ -160,16 +155,11 @@ void * sendDHCPREQUEST(void * arg) {
 int sendDHCPRELEASE(){
 	struct mdhcp_t * dhcp_msg;
 	struct msg_dhcp_t * msg;
-	int ret;
-	int r, xid;
+	int ret, xid;
 
 	printf("En DHCPRELEASE\n");
 
 	dhcp_msg = new_default_mdhcp();
-
-	// Se genera un xid aleatorio
-	r = (double) random() / (double) RAND_MAX;
-	xid = UINT_MAX * r;
 
 	// Se crea la estructura del mensaje con los datos adecuados
 	dhcp_msg->op = DHCP_OP_BOOTREQUEST;
@@ -182,6 +172,10 @@ int sendDHCPRELEASE(){
 	msg = from_mdhcp_to_message(dhcp_msg);
 
 	ret = sendUDP_Msg(msg->msg, msg->length, &server_address);
+
+	if(ret >=0){
+		printTrace(xid, DHCPRELEASE, "Pedazo cara de culo!");
+	}
 
 	return ret;
 }
@@ -240,6 +234,9 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	int ret = 1;
 	char * buf = malloc(1000); //TODO
 	int num_dhcp = 0;
+	char * msg_string;
+	struct in_addr serv_addr_temp;
+	struct in_addr ip_addr_temp;
 
 	// Se establecen los sets de descriptores
 	FD_ZERO(&recvset);
@@ -261,10 +258,21 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 			printf("recibido %d\n",recv_size);
 
 			get_dhcpH_from_ethM(&messages[num_dhcp], buf, recv_size);
-			num_dhcp++;
+
+			msg_string = malloc(60);
+
+			serv_addr_temp.s_addr = messages[num_dhcp].siaddr;
+			ip_addr_temp.s_addr = messages[num_dhcp].yiaddr;
+			sprintf(msg_string, "%s (offered %s)", inet_ntoa(serv_addr_temp),inet_ntoa(ip_addr_temp));
+
+			printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
+
+			free(msg_string);
 
 			printf("ipOrigen %d\n",messages[0].siaddr);
 			printf("id %d\n",messages[0].xid);
+
+			num_dhcp++;
 		}
 	}
 	ret = num_dhcp;
@@ -302,6 +310,9 @@ int get_ACK_message() {
 
 			get_dhcpH_from_ethM(&dhcp_recv, buf, recv_size);
 			num_dhcp++;
+
+			// Si es NACK hay que ponerlo
+			printTrace(dhcp_recv.xid, DHCPACK, "algo va aquí");
 
 			printf("ipOrigen %d\n",dhcp_recv.siaddr);
 			printf("id %d\n",dhcp_recv.xid);
