@@ -308,9 +308,11 @@ void finalize_all(){
 }
 
 void SIGINT_controller(int sigint){
+	printTrace(0, DHCPSIGINT, NULL);
 	printf("SIGINT\n");
 }
 
 void SIGUSR2_controller(int sigusr2){
+	printTrace(0, DHCPSIGUSR2, NULL);
 	printf("SIGUSR2\n");
 }
