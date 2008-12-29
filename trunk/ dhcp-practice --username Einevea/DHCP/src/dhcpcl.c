@@ -105,7 +105,7 @@ int selecting() {
 	if (numMessages > 0) {
 		//Elegimos ip - no se requiere reservar espacio, se reserva dentro
 		selected_ip = select_ip(dhcpMessages);
-		selected_address = selected_ip->offered_ip;
+		selected_address.s_addr = ntohl(selected_ip->offered_ip);
 		printf("termina selección ip\n");
 
 		// Envia dhcp request
