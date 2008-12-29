@@ -13,7 +13,6 @@ char* StrToHexStr(char *str, int leng);
 int get_UDPhdr(unsigned char **, struct msg_dhcp_t*);
 int get_IPhdr(unsigned char **, in_addr_t, unsigned char *, int);
 unsigned short in_cksum(unsigned short *ptr, int nbytes);
-//u_int16_t software_checksum(u_int8_t *rxtx_buffer, u_int16_t len, u_int16_t sum);
 
 //CODIGO
 int mdhcp_to_message_size(struct mdhcp_t *str_dhcp) {

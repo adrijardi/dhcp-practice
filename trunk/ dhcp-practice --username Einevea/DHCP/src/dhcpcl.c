@@ -112,6 +112,7 @@ int selecting() {
 		//Elegimos ip - no se requiere reservar espacio, se reserva dentro
 		selected_ip = select_ip(dhcpMessages);
 		selected_address.s_addr = ntohl(selected_ip->offered_ip);
+		server_address.s_addr = ntohl(selected_ip->server_ip);
 		printf("termina selección ip\n");
 
 		// Envia dhcp request
@@ -156,11 +157,9 @@ int requesting() {
 
 int bound() {
 	printf("En bound\n");
-	sleep(3600);
-
-	//Temporizador de leasetime
-	//escuchar señales
-	//Si recive señal se envia DHCPRELEASE ??
+	lease = 5;
+	sleep(lease); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
+	sendDHCPRELEASE(); // TODO eliminar
 	return true;
 }
 
@@ -310,12 +309,15 @@ void finalize_all(){
 	free(haddress);
 }
 
+// Sale del programa de manera "abrupta"
 void SIGINT_controller(int sigint){
 	printTrace(0, DHCPSIGINT, NULL);
-	printf("SIGINT\n");
+	finalize_all();
 }
 
+// Hace DHCPRELEASE y baja la interfaz
 void SIGUSR2_controller(int sigusr2){
 	printTrace(0, DHCPSIGUSR2, NULL);
-	printf("SIGUSR2\n");
+	//Si recive señal se envia DHCPRELEASE nuevo socket ip
+
 }
