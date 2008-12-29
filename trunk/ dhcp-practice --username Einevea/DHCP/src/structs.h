@@ -11,6 +11,12 @@
 struct offerIP{
 	uint offered_ip;
 	uint server_ip;
+	struct sockaddr* subnet_mask;
+	struct in_addr* routers_list;
+	struct in_addr* domain_name_server_list;
+	struct in_addr* server_address;
+	char * domain_name;
+	u_int32_t lease;
 };
 
 struct mdhcp_t{
