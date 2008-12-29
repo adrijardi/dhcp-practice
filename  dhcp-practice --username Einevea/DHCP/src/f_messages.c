@@ -378,9 +378,12 @@ int getDhcpDiscoverOptions(char** opt) {
 	msg_lease[0] = 51;
 	msg_lease[1] = 4;
 	msg_lease[2] = lease;
-	msg_lease[3] = lease << 4;
-	msg_lease[4] = lease << 4;
-	msg_lease[5] = lease << 4;
+	lease = lease >> 8;
+	msg_lease[3] = lease;
+	lease = lease >> 8;
+	msg_lease[4] = lease;
+	lease = lease >> 8;
+	msg_lease[5] = lease;
 
 
 	end_opt = 0xFF;
