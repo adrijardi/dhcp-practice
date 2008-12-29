@@ -20,6 +20,8 @@ int bound();
 void clean_close();
 void run();
 void finalize_all();
+void SIGINT_controller(int sigint);
+void SIGUSR2_controller(int sigusr2);
 
 void pruebas() {
 	//pruebaFormatoMsg();
@@ -29,6 +31,8 @@ void pruebas() {
  * Funcion de inicio
  */
 int main(int argc, const char* argv[]) {
+	signal(SIGINT, SIGINT_controller);
+	signal(SIGUSR2, SIGUSR2_controller);
 	debug = DEBUG_OFF;
 	no_exit = true;
 	exit_value = checkParams(argc, argv);
@@ -150,6 +154,8 @@ int requesting() {
 
 int bound() {
 	printf("En bound\n");
+	sleep(3600);
+
 	//Temporizador de leasetime
 	//escuchar señales
 	//Si recive señal se envia DHCPRELEASE ??
@@ -301,3 +307,10 @@ void finalize_all(){
 	free(haddress);
 }
 
+void SIGINT_controller(int sigint){
+	printf("SIGINT\n");
+}
+
+void SIGUSR2_controller(int sigusr2){
+	printf("SIGUSR2\n");
+}

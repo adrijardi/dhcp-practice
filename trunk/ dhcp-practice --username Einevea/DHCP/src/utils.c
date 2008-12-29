@@ -65,10 +65,10 @@ void printTrace(int xid, enum dhcp_message state, char* str){
 		case IP:
 			fprintf(stdout,"#[%s] IP %s.\n",timestamp,str);
 			break;
-		case SIGINT:
+		case DHCPSIGINT:
 			fprintf(stdout,"#[%s] SIGINT received.\n",timestamp);
 			break;
-		case SIGUSR2:
+		case DHCPSIGUSR2:
 			fprintf(stdout,"#[%s] SIGUSR2 received.\n",timestamp);
 			break;
 		}
