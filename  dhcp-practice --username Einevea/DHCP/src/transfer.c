@@ -10,7 +10,7 @@
 //Metodos internos
 int sendMSG(struct msg_dhcp_t *message);
 int sendETH_Msg(struct mdhcp_t*, in_addr_t address);
-int sendUDP_Msg(struct mdhcp_t*, in_addr_t address);
+int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * address);
 
 int sock_packet; // Socket de envio / recepción a nivel packet
 struct sockaddr_ll addr_packet; // Dirección de envio
@@ -157,34 +157,68 @@ void * sendDHCPREQUEST(void * arg) {
 	return (void*) ret;
 }
 
+int sendDHCPRELEASE(){
+	struct mdhcp_t * dhcp_msg;
+	struct msg_dhcp_t * msg;
+	int ret;
+
+	printf("En DHCPRELEASE\n");
+
+	dhcp_msg = new_default_mdhcp();
+
+	msg = from_mdhcp_to_message(dhcp_msg);
+
+	ret = sendUDP_Msg(msg->msg, msg->length, &server_address);
+
+	return ret;
+}
+
 int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address) {
 	unsigned char** msg;
 	size_t size;
 	int ret, enviado;
 	ret = 0;
+	/// Definimos el mensaje, inclusion de cabeceras...
+	msg = malloc(4);
+	size = getETHMessage(msg, address, dhcpStuct);
+	//printf("El tamaño del pakete es %d\n", size);
 
-	if (ret >= 0) {
-		/// Definimos el mensaje, inclusion de cabeceras...
-		msg = malloc(4);
-		size = getETHMessage(msg, address, dhcpStuct);
-		//printf("El tamaño del pakete es %d\n", size);
-
-		// Se realiza el envio
-		enviado = sendto(sock_packet, *msg, size, 0,
-				(struct sockaddr *) &addr_packet, sizeof(struct sockaddr_ll));
-		if (enviado == -1) {
-			perror("sendto");
-			ret = -1;
-		}
-		printf("Enviado %d\n", enviado);
+	// Se realiza el envio
+	enviado = sendto(sock_packet, *msg, size, 0,
+			(struct sockaddr *) &addr_packet, sizeof(struct sockaddr_ll));
+	if (enviado == -1) {
+		perror("sendto");
+		ret = -1;
 	}
+	printf("Enviado %d\n", enviado);
 
 	return ret;
 }
 
-int sendUDP_Msg(struct mdhcp_t *message, in_addr_t address) {
-	return true;
+int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
+	int sock_inet;
+	struct sockaddr_in addr_inet;
+	int ret = 0;
+
+	sock_inet = socket(AF_INET, SOCK_DGRAM, 0);
+	if(sock_inet < 0)
+		perror("socket");
+	else{
+		addr_inet.sin_addr = *ip_address;
+		addr_inet.sin_family = AF_INET;
+		addr_inet.sin_port = SERVER_PORT;
+
+		ret = sendto(sock_inet, msg, len, 0, (struct sockaddr*)&addr_inet, sizeof(struct sockaddr_in));
+		// TODO si ret no es igual al tamaño reenviar el resto
+		if(ret < 0){
+			perror("sendto");
+		}
+	}
+	close(sock_inet);
+	return ret;
 }
+
+// TODO comprobar que se cierran todos los socket
 
 // Recive todos los mensajes de dhcpOffer
 int get_selecting_messages(struct mdhcp_t messages[]) {
