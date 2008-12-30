@@ -19,6 +19,7 @@
 #include <linux/if_ether.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "constants.h"
 #include "dhcp_state.h"
@@ -29,8 +30,9 @@ void printTrace(int xid, enum dhcp_message state, char* str);
 void time_wait(int microsec);
 void obtainHardwareAddress();
 int obtain_ifindex();
-struct offerIP* select_ip(struct mdhcp_t ip_list[]);
+void setMSGInfo(struct mdhcp_t ip_list[]);
 int set_device_ip(const char* interface, struct in_addr ip_adress);
+void printDebug(char* method, const char *string, ...);
 
 pthread_mutex_t * lock;
 pthread_mutex_t * lock_params;
