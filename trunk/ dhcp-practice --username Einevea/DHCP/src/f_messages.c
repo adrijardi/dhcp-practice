@@ -163,12 +163,12 @@ int from_message_to_mdhcp(struct mdhcp_t * dhcp, struct msg_dhcp_t *message) {
 void free_mdhcp(struct mdhcp_t *str_dhcp) {
 	if (str_dhcp->opt_length > 0)
 		//free(str_dhcp->options);
-	free(str_dhcp);
+		free(str_dhcp);
 }
 void free_message(struct msg_dhcp_t *message) {
 	//if (message->length > 0)
-		free(message->msg); //TODO memoria
-		free(message);
+	free(message->msg); //TODO memoria
+	free(message);
 }
 void print_mdhcp(struct mdhcp_t *str_dhcp) {
 	char *cad, *chaddr, *sname, *file, *options, *xchaddr;
@@ -301,8 +301,7 @@ int get_IPhdr(unsigned char ** msg, in_addr_t hostname,
 	iph->saddr = 0;
 	iph->daddr = hostname;
 	iph->check = 0;
-	iph->check = in_cksum((unsigned short *)iph, sizeof(struct iphdr));
-
+	iph->check = in_cksum((unsigned short *) iph, sizeof(struct iphdr));
 
 	p = 0;
 	caux = iph->version;
@@ -335,8 +334,7 @@ int get_IPhdr(unsigned char ** msg, in_addr_t hostname,
 	return size;
 }
 
-unsigned short in_cksum(unsigned short *addr, int len)
-{
+unsigned short in_cksum(unsigned short *addr, int len) {
 	int nleft = len;
 	int sum = 0;
 	unsigned short *w = addr;
@@ -358,13 +356,15 @@ unsigned short in_cksum(unsigned short *addr, int len)
 	return (answer);
 }
 
-
 int getDhcpDiscoverOptions(char** opt) {
 	int p, size;
+	u_int32_t aux_lease;
 	u_int8_t magic_c[4];
 	u_int8_t msg_type[3];
 	u_int8_t msg_lease[6];
 	u_int8_t end_opt;
+
+	aux_lease = lease;
 
 	magic_c[0] = 99;
 	magic_c[1] = 130;
@@ -377,14 +377,13 @@ int getDhcpDiscoverOptions(char** opt) {
 
 	msg_lease[0] = 51;
 	msg_lease[1] = 4;
-	msg_lease[2] = lease;
-	lease = lease >> 8;
-	msg_lease[3] = lease;
-	lease = lease >> 8;
-	msg_lease[4] = lease;
-	lease = lease >> 8;
-	msg_lease[5] = lease;
-
+	msg_lease[5] = aux_lease;
+	aux_lease = aux_lease >> 8;
+	msg_lease[4] = aux_lease;
+	aux_lease = aux_lease >> 8;
+	msg_lease[3] = aux_lease;
+	aux_lease = aux_lease >> 8;
+	msg_lease[2] = aux_lease;
 
 	end_opt = 0xFF;
 
@@ -405,62 +404,65 @@ int getDhcpDiscoverOptions(char** opt) {
 	return size;
 }
 
-int getDhcpRequestOptions(char** opt, struct offerIP* selected_ip){
+int getDhcpRequestOptions(char** opt) {
 	int p, size;
-		u_int8_t magic_c[4];
-		u_int8_t msg_type[3];
-		u_int8_t serv_ident[6];
-		u_int8_t msg_lease[6];
-		u_int8_t end_opt;
+	u_int32_t aux_lease;
+	u_int8_t magic_c[4];
+	u_int8_t msg_type[3];
+	u_int8_t serv_ident[6];
+	u_int8_t msg_lease[6];
+	u_int8_t end_opt;
 
-		magic_c[0] = 99;
-		magic_c[1] = 130;
-		magic_c[2] = 83;
-		magic_c[3] = 99;
+	aux_lease = lease;
 
-		msg_type[0] = 0x35;
-		msg_type[1] = 0x1;
-		msg_type[2] = 0x3;
+	magic_c[0] = 99;
+	magic_c[1] = 130;
+	magic_c[2] = 83;
+	magic_c[3] = 99;
 
-		msg_lease[0] = 51;
-		msg_lease[1] = 4;
-		msg_lease[2] = lease;
-		lease = lease >> 8;
-		msg_lease[3] = lease;
-		lease = lease >> 8;
-		msg_lease[4] = lease;
-		lease = lease >> 8;
-		msg_lease[5] = lease;
+	msg_type[0] = 0x35;
+	msg_type[1] = 0x1;
+	msg_type[2] = 0x3;
 
-		serv_ident[0] = 54;
-		serv_ident[1] = 4;
-		memcpy(&serv_ident[2], &selected_ip->server_ip, 4);
+	msg_lease[0] = 51;
+	msg_lease[1] = 4;
+	msg_lease[5] = aux_lease;
+	aux_lease = aux_lease >> 8;
+	msg_lease[4] = aux_lease;
+	aux_lease = aux_lease >> 8;
+	msg_lease[3] = aux_lease;
+	aux_lease = aux_lease >> 8;
+	msg_lease[2] = aux_lease;
 
-		end_opt = 0xFF;
+	serv_ident[0] = 54;
+	serv_ident[1] = 4;
+	memcpy(&serv_ident[2], &server_address, 4);
 
-		size = 64;
-		*opt = malloc(size);
+	end_opt = 0xFF;
 
-		bzero(*opt, size);
-		p = 0;
-		memcpy(*opt, magic_c, 4);
-		p += 4;
-		memcpy(*opt + p, msg_type, 3);
-		p += 3;
-		memcpy(*opt + p, msg_lease, 6);
-		p += 6;
-		memcpy(*opt + p, serv_ident, 6);
-		p += 6;
-		memcpy(*opt + p, &end_opt, 1);
-		p += 1;
+	size = 64;
+	*opt = malloc(size);
 
-		return size;
+	bzero(*opt, size);
+	p = 0;
+	memcpy(*opt, magic_c, 4);
+	p += 4;
+	memcpy(*opt + p, msg_type, 3);
+	p += 3;
+	memcpy(*opt + p, msg_lease, 6);
+	p += 6;
+	memcpy(*opt + p, serv_ident, 6);
+	p += 6;
+	memcpy(*opt + p, &end_opt, 1);
+	p += 1;
+
+	return size;
 }
 
-int get_dhcpH_from_ethM(struct mdhcp_t * dhcp, char * msg, int len){
+int get_dhcpH_from_ethM(struct mdhcp_t * dhcp, char * msg, int len) {
 	int ip_udp_header_size = 28;
 	struct msg_dhcp_t dhcpM;
-	dhcpM.msg = (unsigned char *)msg + ip_udp_header_size;
+	dhcpM.msg = (unsigned char *) msg + ip_udp_header_size;
 	dhcpM.length = len - ip_udp_header_size;
 
 	return from_message_to_mdhcp(dhcp, &dhcpM);

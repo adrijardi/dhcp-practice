@@ -36,6 +36,10 @@ int main(int argc, const char* argv[]) {
 	debug = DEBUG_OFF;
 	no_exit = true;
 	lease = 0xffffffff;
+	subnet_mask = NULL;
+	routers_list = NULL;
+	domain_name_server_list = NULL;
+	domain_name = NULL;
 	//TODO faltan mas parametros por defecto.
 	exit_value = checkParams(argc, argv);
 	//pruebas();//TODO quitar
@@ -43,7 +47,7 @@ int main(int argc, const char* argv[]) {
 		printTrace(0, PID, NULL);
 		getFileParams();
 		initialize();
-		printf("inicializado\n");
+		printDebug("main", "Inicializado");
 		run();
 		finalize_all();
 	}
@@ -88,7 +92,7 @@ void run() {
 }
 
 void *init(void *arg) {
-	printf("En init\n");
+	printDebug("init", "");
 	// Se espera un numero aleatorio de segundos entre 1 y 10
 	srandom(time(NULL));
 	time_wait((random() % 9000) + 1000);
@@ -99,37 +103,32 @@ void *init(void *arg) {
 int selecting() {
 	struct mdhcp_t dhcpMessages[MAXDHCPOFFERS];
 	int numMessages;
-	struct offerIP *selected_ip;
 	int ret = 0;
 	pthread_t hilo;
 	pthread_attr_t hilo_attr;
-
-	printf("En selecting\n");
+	printDebug("selecting", "");
 
 	// Recive los mensaje Offer
 	numMessages = get_selecting_messages(dhcpMessages);
 	if (numMessages > 0) {
 		//Elegimos ip - no se requiere reservar espacio, se reserva dentro
-		selected_ip = select_ip(dhcpMessages);
-		selected_address.s_addr = ntohl(selected_ip->offered_ip);
-		server_address.s_addr = ntohl(selected_ip->server_ip);
-		printf("termina selección ip\n");
+		setMSGInfo(dhcpMessages);
+		printDebug("selecting", "termina selección ip");
 
 		// Envia dhcp request
 
-		// Se cierra el lock de control de envio ( no se envia hasta que no se está preparado para recivir )
+		// Se cierra el lock de control de envio ( no se envia hasta que no se está preparado para recibir )
 		pthread_mutex_lock(lock);
 		pthread_mutex_lock(lock_params);
 
-		printf("se crea hilo\n");
+		printDebug("selecting", "se crea hilo");
 		//Se lanza un nuevo hilo para el envio
 		pthread_attr_init(&hilo_attr);
 		if (pthread_create(&hilo, &hilo_attr, sendDHCPREQUEST,
-				(void *) selected_ip) < 0) //TODO mirar valor de retorno
+				(void *) 0) < 0) //TODO mirar valor de retorno
 			perror("pthread_create");
 
 		pthread_mutex_lock(lock_params);
-		free(selected_ip);
 		pthread_mutex_unlock(lock_params);
 	}
 	return ret;
@@ -138,8 +137,7 @@ int selecting() {
 int requesting() {
 	int ret = 0;
 	int ack_ok;
-
-	printf("En requesting\n");
+	printDebug("requesting", "");
 
 	// Recive los mensaje Offer
 	ack_ok = get_ACK_message();
@@ -156,7 +154,7 @@ int requesting() {
 }
 
 int bound() {
-	printf("En bound\n");
+	printDebug("bound", "");
 	lease = 5;
 	sleep(lease); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
 	sendDHCPRELEASE(); // TODO eliminar
@@ -185,7 +183,7 @@ int initialize() {
 }
 
 void getFileParams() {
-	fprintf(stdout,"Obtenemos parametros?\n");
+	printDebug("getFileParams", "Obtenemos parametros?");
 }
 
 /*
@@ -239,8 +237,8 @@ int checkParams(int argc, const char* argv[]) {
 
 				} else if (strcmp(param, "-d") == 0) {
 					//Se activa el modo debug
-					printf("Debug mode [ON]\n");
 					debug = DEBUG_ON;
+					printDebug("checkParams", "Debug mode <ON>");
 
 				} else {
 					//El parametro recibido no es un parametro acordado
@@ -262,7 +260,7 @@ int checkIFace(char* iface) {
 	int ret;
 	ret = true;
 	//TODO comprobar iface
-	printf("%d\n", ret);
+	printDebug("checkIFace", "%d", ret);
 	return ret;
 }
 
@@ -300,6 +298,7 @@ void printParamsError(int err) {
 }
 
 void finalize_all(){
+	printDebug("finalize_all", "");
 	close_sockets();
 	free(lock);
 	free(lock_params);

@@ -57,7 +57,7 @@ int init_sockets() {
 	return ret;
 }
 
-void close_sockets(){
+void close_sockets() {
 	close(sock_packet);
 }
 
@@ -91,12 +91,12 @@ int sendDHCPDISCOVER() {
 	// Se controla que el lock esté abierto
 	pthread_mutex_lock(lock);
 	// Se envia el mensaje dhcp discover a broadcast
+	printTrace(xid, DHCPDISCOVER, NULL);
 	if (sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) >= 0) {
-		printTrace(xid, DHCPDISCOVER, NULL);
 		ret = true;
 	} else {
 		fprintf(stderr,
-				"ERROR: No se ha podido mandar el mensaje dhcpdiscover.\n");
+		"ERROR: No se ha podido mandar el mensaje dhcpdiscover.\n");
 	}
 
 	// Se libera el lock
@@ -114,14 +114,13 @@ void * sendDHCPREQUEST(void * arg) {
 	struct mdhcp_t* dhcpRequest;
 	char ** options;
 	int opt_size;
-	struct offerIP selected_ip;
+	/////struct offerIP selected_ip;
 
 	// Se copian los parámetros y se libera el lock
-	memcpy(&selected_ip, arg, sizeof(struct offerIP));
+	////memcpy(&selected_ip, arg, sizeof(struct offerIP));
 
 	pthread_mutex_unlock(lock_params);
-
-	printf("enviando dhcpRequest\n");
+	printDebug("sendDHCPREQUEST", "enviando dhcpRequest");
 
 	// Se crea la estructura del mensaje con los datos adecuados
 	dhcpRequest = new_default_mdhcp();
@@ -133,7 +132,7 @@ void * sendDHCPREQUEST(void * arg) {
 	memcpy(dhcpRequest->chaddr, haddress, dhcpRequest->hlen);
 
 	options = malloc(4);
-	opt_size = getDhcpRequestOptions(options, &selected_ip);
+	opt_size = getDhcpRequestOptions(options);
 	dhcpRequest->options = (*options);
 	dhcpRequest->opt_length = opt_size;
 
@@ -142,7 +141,8 @@ void * sendDHCPREQUEST(void * arg) {
 		printTrace(xid, DHCPREQUEST, inet_ntoa(server_address));
 		ret = true;
 	} else {
-		fprintf(stderr,	"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
+		fprintf(stderr,
+				"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
 	}
 
 	free(*options);
@@ -152,13 +152,12 @@ void * sendDHCPREQUEST(void * arg) {
 	return (void*) ret;
 }
 
-int sendDHCPRELEASE(){
+int sendDHCPRELEASE() {
 	struct mdhcp_t * dhcp_msg;
 	struct msg_dhcp_t * msg;
-	int ret, xid;
+	int ret;
 
-	printf("En DHCPRELEASE\n");
-
+	printDebug("sendDHCPRELEASE", "");
 	dhcp_msg = new_default_mdhcp();
 
 	// Se crea la estructura del mensaje con los datos adecuados
@@ -173,7 +172,7 @@ int sendDHCPRELEASE(){
 
 	ret = sendUDP_Msg(msg->msg, msg->length, &server_address);
 
-	if(ret >=0){
+	if (ret >= 0) {
 		printTrace(xid, DHCPRELEASE, "Pedazo cara de culo!");
 	}
 
@@ -188,7 +187,7 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address) {
 	/// Definimos el mensaje, inclusion de cabeceras...
 	msg = malloc(4);
 	size = getETHMessage(msg, address, dhcpStuct);
-	//printf("El tamaño del pakete es %d\n", size);
+	//printDebug("sendETH_Msg", "El tamaño del pakete es %d", size);
 
 	// Se realiza el envio
 	enviado = sendto(sock_packet, *msg, size, 0,
@@ -197,7 +196,7 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address) {
 		perror("sendto");
 		ret = -1;
 	}
-	printf("Enviado %d\n", enviado);
+	printDebug("sendETH_Msg", "Enviado %d", enviado);
 
 	return ret;
 }
@@ -207,17 +206,18 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 	struct sockaddr_in addr_inet;
 	int ret = 0;
 
-	sock_inet = socket(AF_INET, SOCK_DGRAM, 0);
-	if(sock_inet < 0)
+	sock_inet = socket(AF_INET,SOCK_DGRAM, 0);
+	if (sock_inet < 0)
 		perror("socket");
-	else{
+	else {
 		addr_inet.sin_addr = *ip_address;
 		addr_inet.sin_family = AF_INET;
 		addr_inet.sin_port = htons(SERVER_PORT);
 
-		ret = sendto(sock_inet, msg, len, 0, (struct sockaddr*)&addr_inet, sizeof(struct sockaddr_in));
+		ret = sendto(sock_inet, msg, len, 0, (struct sockaddr*) &addr_inet,
+				sizeof(struct sockaddr_in));
 		// TODO si ret no es igual al tamaño reenviar el resto
-		if(ret < 0){
+		if (ret < 0) {
 			perror("sendto");
 		}
 	}
@@ -235,6 +235,8 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	char * buf = malloc(1000); //TODO
 	int num_dhcp = 0;
 	char * msg_string;
+	char *str_serv_addr;
+	char *str_ip_addr;
 	struct in_addr serv_addr_temp;
 	struct in_addr ip_addr_temp;
 
@@ -255,31 +257,39 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 			perror("select");
 		} else if(ret> 0) {
 			int recv_size = recvfrom(sock_packet, buf, 1000, 0, NULL, NULL);
-			printf("recibido %d\n",recv_size);
+			printDebug("get_selecting_messages", "Recibido %d", recv_size);
 
 			get_dhcpH_from_ethM(&messages[num_dhcp], buf, recv_size);
 
-			msg_string = malloc(60);
+			// Se comprueba que el mensaje responda al ultimo Xid
+				if(messages[num_dhcp].xid == xid) {
+					msg_string = malloc(60);
 
-			serv_addr_temp.s_addr = messages[num_dhcp].siaddr;
-			ip_addr_temp.s_addr = messages[num_dhcp].yiaddr;
-			sprintf(msg_string, "%s (offered %s)", inet_ntoa(serv_addr_temp),inet_ntoa(ip_addr_temp));
+					ip_addr_temp.s_addr = ntohl(messages[num_dhcp].yiaddr);
+					serv_addr_temp.s_addr = ntohl(messages[num_dhcp].siaddr);
+					str_serv_addr = inet_ntoa(serv_addr_temp);
+					str_ip_addr = inet_ntoa(ip_addr_temp);
+					//TODO esta mal? no une bien las cadenas?
+					sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
 
-			printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
+					printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
 
-			free(msg_string);
+					free(msg_string);
+					printDebug("get_selecting_messages", "ipOrigen %d",messages[0].siaddr);
+				printDebug("get_selecting_messages", "id %d",messages[0].xid);
 
-			printf("ipOrigen %d\n",messages[0].siaddr);
-			printf("id %d\n",messages[0].xid);
-
-			num_dhcp++;
+				num_dhcp++;
+			}else{
+				printDebug("get_selecting_messages", "Distinto Xid");
+				//free(&messages[num_dhcp]); TODO posible memory leak?
+			}
 		}
 	}
-	ret = num_dhcp;
-	free(buf);
+		ret = num_dhcp;
+		free(buf);
 
-	return ret;
-}
+		return ret;
+	}
 
 int get_ACK_message() {
 	fd_set recvset;
@@ -305,18 +315,25 @@ int get_ACK_message() {
 		if(ret < 0) {
 			perror("select");
 		} else if(ret> 0) {
+
 			int recv_size = recvfrom(sock_packet, buf, 1000, 0, NULL, NULL);
-			printf("recibido %d\n",recv_size);
+			printDebug("get_ACK_message", "recibido %d",recv_size);
 
 			get_dhcpH_from_ethM(&dhcp_recv, buf, recv_size);
-			num_dhcp++;
+			// Se comprueba que el mensaje responda al ultimo Xid
+				if(dhcp_recv.xid == xid) {
+					num_dhcp++;
 
-			// Si es NACK hay que ponerlo
-			printTrace(dhcp_recv.xid, DHCPACK, "algo va aquí");
+					// Si es NACK hay que ponerlo
+				printTrace(dhcp_recv.xid, DHCPACK, "algo va aquí");
 
-			printf("ipOrigen %d\n",dhcp_recv.siaddr);
-			printf("id %d\n",dhcp_recv.xid);
-			// TODO hay que ver que el mensaje sea ACK y no otra mierda
+				printDebug("get_ACK_message", "ipOrigen %d",dhcp_recv.siaddr);
+				printDebug("get_ACK_message", "id %d",dhcp_recv.xid);
+				// TODO hay que ver que el mensaje sea ACK y no otra mierda
+			} else {
+				printDebug("get_ACK_message", "Distinto Xid");
+				//free(&dhcp_recv); TODO posible memory leak?
+			}
 		}
 	}
 	ret = num_dhcp;

@@ -41,7 +41,7 @@ void print_mdhcp(struct mdhcp_t *str_dhcp);
 void print_message(struct msg_dhcp_t *msg);
 
 int getDhcpDiscoverOptions(char** opt);
-int getDhcpRequestOptions(char** opt, struct offerIP * selected_ip);
+int getDhcpRequestOptions(char** opt);
 
 int getETHMessage(unsigned char** , in_addr_t , struct mdhcp_t* );
 
