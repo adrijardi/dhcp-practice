@@ -70,15 +70,15 @@ int sendDHCPDISCOVER() {
 
 	// Se genera un xid aleatorio
 	r = (double) random() / (double) RAND_MAX;
-	xid = UINT_MAX * r;
+	XID = UINT_MAX * r;
 
 	// Se crea la estructura del mensaje con los datos adecuados
 	dhcpdiscover = new_default_mdhcp();
 	dhcpdiscover->op = DHCP_OP_BOOTREQUEST;
 	dhcpdiscover->hlen = 6;
-	dhcpdiscover->xid = xid;
+	dhcpdiscover->xid = XID;
 	dhcpdiscover->secs = 0; //TODO preguntar al profesor
-	memcpy(dhcpdiscover->chaddr, haddress, dhcpdiscover->hlen);
+	memcpy(dhcpdiscover->chaddr, HADDRESS, dhcpdiscover->hlen);
 
 	options = malloc(4);
 	opt_size = getDhcpDiscoverOptions(options);
@@ -91,7 +91,7 @@ int sendDHCPDISCOVER() {
 	// Se controla que el lock esté abierto
 	pthread_mutex_lock(lock);
 	// Se envia el mensaje dhcp discover a broadcast
-	printTrace(xid, DHCPDISCOVER, NULL);
+	printTrace(XID, DHCPDISCOVER, NULL);
 	if (sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) >= 0) {
 		ret = true;
 	} else {
@@ -102,10 +102,8 @@ int sendDHCPDISCOVER() {
 	// Se libera el lock
 	pthread_mutex_unlock(lock);
 
-	free(*options);
 	free(options);
 	free_mdhcp(dhcpdiscover);
-
 	return ret;
 }
 
@@ -127,9 +125,9 @@ void * sendDHCPREQUEST(void * arg) {
 
 	dhcpRequest->op = DHCP_OP_BOOTREQUEST;
 	dhcpRequest->hlen = 6;
-	dhcpRequest->xid = xid;
+	dhcpRequest->xid = XID;
 	dhcpRequest->secs = 0;
-	memcpy(dhcpRequest->chaddr, haddress, dhcpRequest->hlen);
+	memcpy(dhcpRequest->chaddr, HADDRESS, dhcpRequest->hlen);
 
 	options = malloc(4);
 	opt_size = getDhcpRequestOptions(options);
@@ -138,17 +136,15 @@ void * sendDHCPREQUEST(void * arg) {
 
 	// Se envia el mensaje dhcp request a broadcast
 	if (sendETH_Msg(dhcpRequest, INADDR_BROADCAST) >= 0) {
-		printTrace(xid, DHCPREQUEST, inet_ntoa(server_address));
+		printTrace(XID, DHCPREQUEST, inet_ntoa(SERVER_ADDRESS));
 		ret = true;
 	} else {
 		fprintf(stderr,
 				"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
 	}
 
-	free(*options);
 	free(options);
 	free_mdhcp(dhcpRequest);
-
 	return (void*) ret;
 }
 
@@ -163,19 +159,21 @@ int sendDHCPRELEASE() {
 	// Se crea la estructura del mensaje con los datos adecuados
 	dhcp_msg->op = DHCP_OP_BOOTREQUEST;
 	dhcp_msg->hlen = 6;
-	dhcp_msg->xid = xid;
+	dhcp_msg->xid = XID;
 	dhcp_msg->secs = 0;
-	memcpy(&dhcp_msg->ciaddr, &selected_address.s_addr, sizeof(in_addr_t));
-	memcpy(dhcp_msg->chaddr, haddress, dhcp_msg->hlen);
+	memcpy(&dhcp_msg->ciaddr, &SELECTED_ADDRESS.s_addr, sizeof(in_addr_t));
+	memcpy(dhcp_msg->chaddr, HADDRESS, dhcp_msg->hlen);
 
 	msg = from_mdhcp_to_message(dhcp_msg);
 
-	ret = sendUDP_Msg(msg->msg, msg->length, &server_address);
+	ret = sendUDP_Msg(msg->msg, msg->length, &SERVER_ADDRESS);
 
 	if (ret >= 0) {
-		printTrace(xid, DHCPRELEASE, "Pedazo cara de culo!");
+		printTrace(XID, DHCPRELEASE, "Pedazo cara de culo!");
 	}
 
+	free_mdhcp(dhcp_msg);
+	free_message(msg);
 	return ret;
 }
 
@@ -198,6 +196,8 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address) {
 	}
 	printDebug("sendETH_Msg", "Enviado %d", enviado);
 
+	free(*msg);
+	free(msg);
 	return ret;
 }
 
@@ -262,7 +262,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 			get_dhcpH_from_ethM(&messages[num_dhcp], buf, recv_size);
 
 			// Se comprueba que el mensaje responda al ultimo Xid
-				if(messages[num_dhcp].xid == xid) {
+				if(messages[num_dhcp].xid == XID) {
 					msg_string = malloc(60);
 
 					ip_addr_temp.s_addr = ntohl(messages[num_dhcp].yiaddr);
@@ -281,7 +281,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 				num_dhcp++;
 			}else{
 				printDebug("get_selecting_messages", "Distinto Xid");
-				//free(&messages[num_dhcp]); TODO posible memory leak?
+				//free(messages[num_dhcp].options); TODO mirar memoria
 			}
 		}
 	}
@@ -321,7 +321,7 @@ int get_ACK_message() {
 
 			get_dhcpH_from_ethM(&dhcp_recv, buf, recv_size);
 			// Se comprueba que el mensaje responda al ultimo Xid
-				if(dhcp_recv.xid == xid) {
+				if(dhcp_recv.xid == XID) {
 					num_dhcp++;
 
 					// Si es NACK hay que ponerlo

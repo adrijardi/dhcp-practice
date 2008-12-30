@@ -40,7 +40,7 @@ void printDebug(char* method, const char *fmt, ...) {
 	va_end (ap);
 
 	timestamp = getTimestamp();
-	if (debug == true) {
+	if (DEBUG == true) {
 		printf("-[%s] {%s} %s\n", timestamp, method, buf);
 	}
 	free(timestamp);
@@ -109,13 +109,13 @@ void obtainHardwareAddress() {
 	struct ifreq ifr;
 
 	fd = socket(PF_INET,SOCK_DGRAM, 0);
-	strcpy(ifr.ifr_name, iface);
+	strcpy(ifr.ifr_name, IFACE);
 	ioctl(fd, SIOCGIFHWADDR, &ifr);
-	if (haddress == NULL)
-		haddress = malloc(haddress_size);
+	if (HADDRESS == NULL)
+		HADDRESS = malloc(HADDRESS_SIZE);
 
-	bzero(haddress, haddress_size);
-	memcpy(haddress, ifr.ifr_hwaddr.sa_data, haddress_size);
+	bzero(HADDRESS, HADDRESS_SIZE);
+	memcpy(HADDRESS, ifr.ifr_hwaddr.sa_data, HADDRESS_SIZE);
 	close(fd);
 }
 
@@ -125,7 +125,7 @@ int obtain_ifindex() {
 	//TODO cambiar para que solo obtenga mediante ioctl en la primera petición
 
 	fd = socket(PF_INET,SOCK_DGRAM, 0);
-	strcpy(ifr.ifr_ifrn.ifrn_name, iface);
+	strcpy(ifr.ifr_ifrn.ifrn_name, IFACE);
 	if (ioctl(fd, SIOCGIFINDEX, &ifr) < 0) {
 		perror("ioctl");
 		fprintf(stderr, "ERROR: La interfaz especificada no es válida.\n");
@@ -140,8 +140,8 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 	u_int case_;
 	int p, i, h, size, lenght;
 	u_int32_t aux32;
-	selected_address.s_addr = ntohl(ip_list[0].yiaddr);
-	server_address.s_addr = ntohl(ip_list[0].siaddr);
+	SELECTED_ADDRESS.s_addr = ntohl(ip_list[0].yiaddr);
+	SERVER_ADDRESS.s_addr = ntohl(ip_list[0].siaddr);
 
 	p = 4;
 	lenght = (ip_list[0].opt_length) - 2;
@@ -152,69 +152,62 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 		switch (case_) {
 		case 1:
 			//Subnet Mask
-			if (subnet_mask != NULL) {
-				free(subnet_mask);
+			if (SUBNET_MASK != NULL) {
+				free(SUBNET_MASK);
 			}
-			subnet_mask = malloc(sizeof(struct sockaddr));
+			SUBNET_MASK = malloc(sizeof(struct sockaddr));
 			h = ip_list[0].options[p++];
 			i = 0;
 			while (i < h) {
-				subnet_mask->sa_data[i] = ip_list[0].options[p++];
+				SUBNET_MASK->sa_data[i] = ip_list[0].options[p++];
 				i++;
 			}
 			break;
 		case 3:
 			//Router List
-			if (routers_list != NULL) {
-				free(routers_list);
+			if (ROUTERS_LIST != NULL) {
+				free(ROUTERS_LIST);
 			}
-			h = ip_list[0].options[p++];
+			ROUTER_LIST_SIZE = ip_list[0].options[p++]/4;
 			size = sizeof(struct in_addr);
-			routers_list = malloc(size * (h / 4));
-
+			ROUTERS_LIST = malloc(size * ROUTER_LIST_SIZE);
 			i = 0;
-			aux32 = 0;
-			while (i < h) {
-				aux32 = aux32 << 8;
-				aux32 += ip_list[0].options[p++];
-				if (((i + 1) % 4) == 0) {
-					aux32 = 0;
-					(routers_list + (i / 4) * size)->s_addr = aux32;
-				}
+			while (i < ROUTER_LIST_SIZE) {
+				memcpy(&aux32, &ip_list[0].options[p+(i*size)], size);
+				ROUTERS_LIST[i*size].s_addr = ntohl(aux32);
+				p+=size;
 				i++;
 			}
 			break;
 		case 6:
 			//Domain Name Server
-			if (domain_name_server_list != NULL) {
-				free(domain_name_server_list);
+			if (DOMAIN_NAME_SERVER_LIST != NULL) {
+				free(DOMAIN_NAME_SERVER_LIST);
 			}
-			h = ip_list[0].options[p++];
+
+			DOMAIN_LIST_SIZE = ip_list[0].options[p++] / 4;
 			size = sizeof(struct in_addr);
-			domain_name_server_list = malloc(size * (h / 4));
+			DOMAIN_NAME_SERVER_LIST = malloc(size * DOMAIN_LIST_SIZE);
 			i = 0;
-			aux32 = 0;
-			while (i < h) {
-				aux32 = aux32 << 8;
-				aux32 += ip_list[0].options[p++];
-				if (((i + 1) % 4) == 0) {
-					aux32 = 0;
-					(domain_name_server_list + (i / 4) * size)->s_addr = aux32;
-				}
+			while (i < DOMAIN_LIST_SIZE) {
+				memcpy(&aux32, &ip_list[0].options[p+(i*size)], size);
+				printDebug("setMSGInfo", "domain: %u", ntohl(aux32));
+				DOMAIN_NAME_SERVER_LIST[i*size].s_addr = ntohl(aux32);
+				p += size;
 				i++;
 			}
 			break;
 		case 15:
 			//Domain Name
-			if (domain_name != NULL) {
-				free(domain_name);
+			if (DOMAIN_NAME != NULL) {
+				free(DOMAIN_NAME);
 			}
 
 			h = ip_list[0].options[p++];
-			domain_name = malloc(h);
+			DOMAIN_NAME = malloc(h);
 			i = 0;
 			while (i < h) {
-				domain_name[i] = ip_list[0].options[p++];
+				DOMAIN_NAME[i] = ip_list[0].options[p++];
 				i++;
 			}
 			break;
@@ -228,7 +221,7 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 				aux32 += ip_list[0].options[p++];
 				i++;
 			}
-			lease = aux32;
+			LEASE = aux32;
 			break;
 		case 0xff:
 			//End Options
