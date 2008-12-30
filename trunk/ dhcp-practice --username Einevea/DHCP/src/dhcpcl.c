@@ -33,17 +33,17 @@ void pruebas() {
 int main(int argc, const char* argv[]) {
 	signal(SIGINT, SIGINT_controller);
 	signal(SIGUSR2, SIGUSR2_controller);
-	debug = DEBUG_OFF;
-	no_exit = true;
-	lease = 0xffffffff;
-	subnet_mask = NULL;
-	routers_list = NULL;
-	domain_name_server_list = NULL;
-	domain_name = NULL;
+	DEBUG = DEBUG_OFF;
+	NO_EXIT = true;
+	LEASE = 0xffffffff;
+	SUBNET_MASK = NULL;
+	ROUTERS_LIST = NULL;
+	DOMAIN_NAME_SERVER_LIST = NULL;
+	DOMAIN_NAME = NULL;
 	//TODO faltan mas parametros por defecto.
-	exit_value = checkParams(argc, argv);
+	EXIT_VALUE = checkParams(argc, argv);
 	//pruebas();//TODO quitar
-	if (exit_value == 0) {
+	if (EXIT_VALUE == 0) {
 		printTrace(0, PID, NULL);
 		getFileParams();
 		initialize();
@@ -51,7 +51,7 @@ int main(int argc, const char* argv[]) {
 		run();
 		finalize_all();
 	}
-	return exit_value;
+	return EXIT_VALUE;
 }
 
 void run() {
@@ -104,6 +104,7 @@ int selecting() {
 	struct mdhcp_t dhcpMessages[MAXDHCPOFFERS];
 	int numMessages;
 	int ret = 0;
+	int i;
 	pthread_t hilo;
 	pthread_attr_t hilo_attr;
 	printDebug("selecting", "");
@@ -116,7 +117,6 @@ int selecting() {
 		printDebug("selecting", "termina selección ip");
 
 		// Envia dhcp request
-
 		// Se cierra el lock de control de envio ( no se envia hasta que no se está preparado para recibir )
 		pthread_mutex_lock(lock);
 		pthread_mutex_lock(lock_params);
@@ -131,6 +131,10 @@ int selecting() {
 		pthread_mutex_lock(lock_params);
 		pthread_mutex_unlock(lock_params);
 	}
+	for(i = 0; i < numMessages; i++){
+		free(dhcpMessages[i].options);
+	}
+
 	return ret;
 }
 
@@ -143,7 +147,7 @@ int requesting() {
 	ack_ok = get_ACK_message();
 	if (ack_ok > 0) {
 		// Establece la ip del dispositivo con ioctl
-		set_device_ip(iface, selected_address);
+		set_device_ip(IFACE, SELECTED_ADDRESS);
 	}
 	return ret;
 
@@ -155,8 +159,8 @@ int requesting() {
 
 int bound() {
 	printDebug("bound", "");
-	lease = 5;
-	sleep(lease); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
+	LEASE = 5;
+	sleep(LEASE); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
 	sendDHCPRELEASE(); // TODO eliminar
 	return true;
 }
@@ -164,7 +168,7 @@ int bound() {
 int initialize() {
 	int ret = 0;
 	// Se inicializan los parametros del estado.
-	state = INIT;
+	STATE = INIT;
 	lock = malloc(sizeof(pthread_mutex_t));
 	lock_params = malloc(sizeof(pthread_mutex_t));
 	if (pthread_mutex_init(lock, NULL) < 0) {
@@ -175,8 +179,8 @@ int initialize() {
 		perror("pthread_mutex_init");
 		exit(-1);
 	}
-	haddress = NULL;
-	haddress_size = 6;
+	HADDRESS = NULL;
+	HADDRESS_SIZE = 6;
 	obtainHardwareAddress();
 	ret = init_sockets();
 	return ret;
@@ -202,7 +206,7 @@ int checkParams(int argc, const char* argv[]) {
 
 		iface_state = checkIFace((char*) argv[1]);
 		if (iface_state == true) {
-			iface = (char*) argv[1];
+			IFACE = (char*) argv[1];
 
 			for (i = 2; i < argc && ret != -1; i += 2) {
 
@@ -210,7 +214,7 @@ int checkParams(int argc, const char* argv[]) {
 				param = (char*) argv[i];
 				if (strcmp(param, "-t") == 0 && i + 1 < argc) {
 					//Se asigna el parametro timeout
-					timeout = strtol(argv[i + 1], &errPtr, 0);
+					TIMEOUT = strtol(argv[i + 1], &errPtr, 0);
 					//Se comprueba que no haya habido un error de formato
 					if (strlen(errPtr) != 0) {
 						printParamsError(1);
@@ -227,7 +231,7 @@ int checkParams(int argc, const char* argv[]) {
 
 				} else if (strcmp(param, "-l") == 0 && i + 1 < argc) {
 					//Se asigna el parametro de lease
-					lease = strtol(argv[i + 1], &errPtr, 0);
+					LEASE = strtol(argv[i + 1], &errPtr, 0);
 					//Se comprueba que no haya habido un error de formato
 					//TODO falta comprobar cuando mandan inf hay que poner lease = 0xffffffff;
 					if (strlen(errPtr) != 0) {
@@ -237,7 +241,7 @@ int checkParams(int argc, const char* argv[]) {
 
 				} else if (strcmp(param, "-d") == 0) {
 					//Se activa el modo debug
-					debug = DEBUG_ON;
+					DEBUG = DEBUG_ON;
 					printDebug("checkParams", "Debug mode <ON>");
 
 				} else {
@@ -303,9 +307,13 @@ void finalize_all(){
 	free(lock);
 	free(lock_params);
 	//free(iface);
-	free(hostname);
-	free(address);
-	free(haddress);
+	free(HOSTNAME);
+	free(ADDRESS);
+	free(HADDRESS);
+	free(SUBNET_MASK);
+	free(ROUTERS_LIST);
+	free(DOMAIN_NAME_SERVER_LIST);
+	free(DOMAIN_NAME);
 }
 
 // Sale del programa de manera "abrupta"

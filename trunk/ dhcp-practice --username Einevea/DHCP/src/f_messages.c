@@ -161,13 +161,14 @@ int from_message_to_mdhcp(struct mdhcp_t * dhcp, struct msg_dhcp_t *message) {
 }
 
 void free_mdhcp(struct mdhcp_t *str_dhcp) {
-	if (str_dhcp->opt_length > 0)
-		//free(str_dhcp->options);
-		free(str_dhcp);
+	if (str_dhcp->opt_length > 0){
+		free(str_dhcp->options);
+	}
+	free(str_dhcp);
 }
 void free_message(struct msg_dhcp_t *message) {
-	//if (message->length > 0)
-	free(message->msg); //TODO memoria
+	if (message->length > 0)
+		free(message->msg); //TODO memoria
 	free(message);
 }
 void print_mdhcp(struct mdhcp_t *str_dhcp) {
@@ -194,12 +195,14 @@ void print_mdhcp(struct mdhcp_t *str_dhcp) {
 	sname = str_dhcp->sname;
 	file = str_dhcp->file;
 	options = str_dhcp->options;
-	xchaddr = StrToHexStr(chaddr, haddress_size);
+	xchaddr = StrToHexStr(chaddr, HADDRESS_SIZE);
 	sprintf(cad, "%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%u-%s-%s-%s-%u-%s", op, htype,
 			hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr,
 			xchaddr, sname, file, opt_length, options);
-	free(xchaddr);
 	printf("---\n%s\n---\n", cad);
+
+	free(xchaddr);
+	free(cad);
 }
 
 char* StrToHexStr(char *str, int leng) {
@@ -277,8 +280,7 @@ int get_UDPhdr(unsigned char ** msg, struct msg_dhcp_t* dhcp_msg) {
 	return size;
 }
 
-int get_IPhdr(unsigned char ** msg, in_addr_t hostname,
-		unsigned char * udp_msg, int udp_size) {
+int get_IPhdr(unsigned char ** msg, in_addr_t hostname, unsigned char * udp_msg, int udp_size) {
 	int size, p;
 	u_int8_t caux;
 	struct iphdr *iph;
@@ -364,7 +366,7 @@ int getDhcpDiscoverOptions(char** opt) {
 	u_int8_t msg_lease[6];
 	u_int8_t end_opt;
 
-	aux_lease = lease;
+	aux_lease = LEASE;
 
 	magic_c[0] = 99;
 	magic_c[1] = 130;
@@ -405,15 +407,17 @@ int getDhcpDiscoverOptions(char** opt) {
 }
 
 int getDhcpRequestOptions(char** opt) {
-	int p, size;
-	u_int32_t aux_lease;
+	int i, p, size;
+	u_int32_t aux32;
 	u_int8_t magic_c[4];
 	u_int8_t msg_type[3];
+	u_int8_t sub_mask[6];
+	char* rout_list;
+	char* dn_list;
+	int addr_size;
 	u_int8_t serv_ident[6];
 	u_int8_t msg_lease[6];
 	u_int8_t end_opt;
-
-	aux_lease = lease;
 
 	magic_c[0] = 99;
 	magic_c[1] = 130;
@@ -424,19 +428,63 @@ int getDhcpRequestOptions(char** opt) {
 	msg_type[1] = 0x1;
 	msg_type[2] = 0x3;
 
+	// Subnet Mask
+	sub_mask[0] = 1;
+	sub_mask[1] = 4;
+	sub_mask[2] = SUBNET_MASK->sa_data[0];
+	sub_mask[3] = SUBNET_MASK->sa_data[1];
+	sub_mask[4] = SUBNET_MASK->sa_data[2];
+	sub_mask[5] = SUBNET_MASK->sa_data[3];
+
+	// Router List
+	addr_size = sizeof(struct in_addr);
+	rout_list = malloc(2 + (ROUTER_LIST_SIZE * addr_size));
+	rout_list[0] = 3;
+	rout_list[1] = ROUTER_LIST_SIZE*addr_size;
+
+	i = 0;
+	printDebug("getDhcpRequestOptions", "Router_list_size: %d", ROUTER_LIST_SIZE);
+	printDebug("getDhcpRequestOptions", "Router_list_size2: %d", 2 + (ROUTER_LIST_SIZE * addr_size));
+	while (i < ROUTER_LIST_SIZE) {
+		printDebug("getDhcpRequestOptions", "Trace: %d", 1);
+		aux32 = htonl(ROUTERS_LIST[i*addr_size].s_addr);
+		printDebug("getDhcpRequestOptions", "Trace: %d", 2);
+		memcpy(&rout_list[2+(i*addr_size)], &aux32, addr_size);
+		printDebug("getDhcpRequestOptions", "Trace: %d", 3);
+		i++;
+	}
+
+	// Domain name List
+	printDebug("getDhcpRequestOptions", "Trace: %d, %u, %u", 4, DOMAIN_LIST_SIZE, addr_size);
+	dn_list = malloc(2 + (DOMAIN_LIST_SIZE * addr_size));
+	printDebug("getDhcpRequestOptions", "Trace: %d", 5);
+	dn_list[0] = 6;
+	dn_list[1] = DOMAIN_LIST_SIZE * addr_size;
+
+	i = 0;
+	printDebug("getDhcpRequestOptions", "domain_list_size: %d", DOMAIN_LIST_SIZE);
+	printDebug("getDhcpRequestOptions", "domain_list_size: %d", 2 + (DOMAIN_LIST_SIZE * addr_size));
+	while (i < DOMAIN_LIST_SIZE) {
+		aux32 = htonl(DOMAIN_NAME_SERVER_LIST[i*addr_size].s_addr);
+		printDebug("getDhcpRequestOptions", "domain: %u", ntohl(aux32));
+		memcpy(&dn_list[2+(i*addr_size)], &aux32, addr_size);
+		i++;
+	}
+
+	aux32 = LEASE;
 	msg_lease[0] = 51;
 	msg_lease[1] = 4;
-	msg_lease[5] = aux_lease;
-	aux_lease = aux_lease >> 8;
-	msg_lease[4] = aux_lease;
-	aux_lease = aux_lease >> 8;
-	msg_lease[3] = aux_lease;
-	aux_lease = aux_lease >> 8;
-	msg_lease[2] = aux_lease;
+	msg_lease[5] = aux32;
+	aux32 = aux32 >> 8;
+	msg_lease[4] = aux32;
+	aux32 = aux32 >> 8;
+	msg_lease[3] = aux32;
+	aux32 = aux32 >> 8;
+	msg_lease[2] = aux32;
 
 	serv_ident[0] = 54;
 	serv_ident[1] = 4;
-	memcpy(&serv_ident[2], &server_address, 4);
+	memcpy(&serv_ident[2], &SERVER_ADDRESS, 4);
 
 	end_opt = 0xFF;
 
@@ -449,6 +497,12 @@ int getDhcpRequestOptions(char** opt) {
 	p += 4;
 	memcpy(*opt + p, msg_type, 3);
 	p += 3;
+	memcpy(*opt + p, sub_mask, 6);
+	p += 6;
+	memcpy(*opt + p, rout_list, (2 + (ROUTER_LIST_SIZE * addr_size)));
+	p += (2 + (ROUTER_LIST_SIZE * addr_size));
+	memcpy(*opt + p, dn_list, (2 + (DOMAIN_LIST_SIZE * addr_size)));
+	p += (2 + (DOMAIN_LIST_SIZE * addr_size));
 	memcpy(*opt + p, msg_lease, 6);
 	p += 6;
 	memcpy(*opt + p, serv_ident, 6);
@@ -456,6 +510,8 @@ int getDhcpRequestOptions(char** opt) {
 	memcpy(*opt + p, &end_opt, 1);
 	p += 1;
 
+	free(rout_list);
+	free(dn_list);
 	return size;
 }
 
