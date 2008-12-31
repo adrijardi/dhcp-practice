@@ -347,6 +347,7 @@ int get_ACK_message() {
 		}
 	}
 	ret = num_dhcp;
+	free(dhcp_recv.options);
 	free(buf);
 
 	return ret;
