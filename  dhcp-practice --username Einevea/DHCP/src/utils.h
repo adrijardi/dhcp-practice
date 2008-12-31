@@ -34,7 +34,4 @@ void setMSGInfo(struct mdhcp_t ip_list[]);
 int set_device_ip(const char* interface, struct in_addr ip_adress);
 void printDebug(char* method, const char *string, ...);
 
-pthread_mutex_t * lock;
-pthread_mutex_t * lock_params;
-
 #endif /* UTILS_H_ */

@@ -31,9 +31,7 @@
 <inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.290549576" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.933321682" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">
-<option id="gnu.c.link.option.libs.495651636" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
-<listOptionValue builtIn="false" value="pthread"/>
-</option>
+<option id="gnu.c.link.option.libs.495651636" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs"/>
 <inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1429916845" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 <additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -56,6 +54,7 @@
 <storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 <storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 <storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
+
 
 
 <storageModule moduleId="scannerConfiguration">
@@ -275,6 +274,7 @@
 <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 <storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 <storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
+
 
 
 <storageModule moduleId="scannerConfiguration">
