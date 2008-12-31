@@ -60,7 +60,8 @@ int init_sockets() {
 }
 
 void close_sockets() {
-	close(sock_packet);
+	if(close(sock_packet) < 0)
+		perror("close");
 }
 
 int sendDHCPDISCOVER() {
