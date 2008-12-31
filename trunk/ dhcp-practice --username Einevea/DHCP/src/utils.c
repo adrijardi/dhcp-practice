@@ -145,10 +145,10 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 
 	p = 4;
 	lenght = (ip_list[0].opt_length) - 2;
-	printDebug("setMSGInfo","l%d",lenght);
+	printDebug("setMSGInfo", "l%d", lenght);
 	while (p < lenght) {
 		case_ = ip_list[0].options[p++];
-		printDebug("setMSGInfo","%u \t %d",case_, p);
+		printDebug("setMSGInfo", "%u \t %d", case_, p);
 		switch (case_) {
 		case 1:
 			//Subnet Mask
@@ -168,14 +168,14 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 			if (ROUTERS_LIST != NULL) {
 				free(ROUTERS_LIST);
 			}
-			ROUTER_LIST_SIZE = ip_list[0].options[p++]/4;
+			ROUTER_LIST_SIZE = ip_list[0].options[p++] / 4;
 			size = sizeof(struct in_addr);
 			ROUTERS_LIST = malloc(size * ROUTER_LIST_SIZE);
 			i = 0;
 			while (i < ROUTER_LIST_SIZE) {
-				memcpy(&aux32, &ip_list[0].options[p+(i*size)], size);
-				ROUTERS_LIST[i*size].s_addr = ntohl(aux32);
-				p+=size;
+				memcpy(&aux32, &ip_list[0].options[p + (i * size)], size);
+				ROUTERS_LIST[i * size].s_addr = ntohl(aux32);
+				p += size;
 				i++;
 			}
 			break;
@@ -190,9 +190,9 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 			DOMAIN_NAME_SERVER_LIST = malloc(size * DOMAIN_LIST_SIZE);
 			i = 0;
 			while (i < DOMAIN_LIST_SIZE) {
-				memcpy(&aux32, &ip_list[0].options[p+(i*size)], size);
+				memcpy(&aux32, &ip_list[0].options[p + (i * size)], size);
 				printDebug("setMSGInfo", "domain: %u", ntohl(aux32));
-				DOMAIN_NAME_SERVER_LIST[i*size].s_addr = ntohl(aux32);
+				DOMAIN_NAME_SERVER_LIST[i * size].s_addr = ntohl(aux32);
 				p += size;
 				i++;
 			}
@@ -270,5 +270,32 @@ int set_device_ip(const char* interface, struct in_addr ip_address) {
 	}
 	close(test_sock);
 	return (0);
+}
+
+// Comprueba si el interfaz está desactivado, y en ese caso lo activa
+// si el interfaz no estaba desactivado previamente devuelve -1
+int up_device_if_down(const char* interface) {
+	int fd;
+	struct ifreq ifr;
+	int is_up;
+	int ret = 0;
+
+	fd = socket(PF_INET,SOCK_DGRAM, 0);
+	strcpy(ifr.ifr_name, IFACE);
+	ioctl(fd, SIOCGIFFLAGS, &ifr);
+
+	is_up = ifr.ifr_ifru.ifru_flags & IFF_UP;
+
+	if(is_up == 0){
+		ifr.ifr_ifru.ifru_flags = ifr.ifr_ifru.ifru_flags | IFF_UP;
+		ioctl(fd, SIOCSIFFLAGS, &ifr);
+	}
+
+	else{
+		ret = -1;
+		printf("Tu tronco!! que tenemos el dispositivo levantado, ¿que pasa, que quieres que te deje sin red?\n");
+	}
+	close(fd);
+	return ret;
 }
 

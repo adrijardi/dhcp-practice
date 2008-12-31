@@ -42,14 +42,18 @@ int main(int argc, const char* argv[]) {
 	DOMAIN_NAME = NULL;
 	//TODO faltan mas parametros por defecto.
 	EXIT_VALUE = checkParams(argc, argv);
-	//pruebas();//TODO quitar
+
 	if (EXIT_VALUE == 0) {
 		printTrace(0, PID, NULL);
 		getFileParams();
-		initialize();
-		printDebug("main", "Inicializado");
-		run();
-		finalize_all();
+		if(up_device_if_down(IFACE) < 0)
+			EXIT_VALUE = -1;
+		if (EXIT_VALUE == 0) {
+			initialize();
+			printDebug("main", "Inicializado");
+			run();
+			finalize_all();
+		}
 	}
 	return EXIT_VALUE;
 }
