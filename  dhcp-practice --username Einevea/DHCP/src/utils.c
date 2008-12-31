@@ -299,3 +299,21 @@ int up_device_if_down(const char* interface) {
 	return ret;
 }
 
+void device_down(const char* interface) {
+	int fd;
+	struct ifreq ifr;
+	int is_up;
+
+	fd = socket(PF_INET,SOCK_DGRAM, 0);
+	strcpy(ifr.ifr_name, IFACE);
+	ioctl(fd, SIOCGIFFLAGS, &ifr);
+
+	is_up = ifr.ifr_ifru.ifru_flags & IFF_UP;
+
+	if(is_up == 1){
+		ifr.ifr_ifru.ifru_flags = ifr.ifr_ifru.ifru_flags ^ IFF_UP;
+		ioctl(fd, SIOCSIFFLAGS, &ifr);
+	}
+
+	close(fd);
+}

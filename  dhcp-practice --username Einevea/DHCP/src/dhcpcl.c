@@ -137,7 +137,8 @@ int bound() {
 	close_sockets();
 	LEASE = 5;
 	sleep(LEASE); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
-	sendDHCPRELEASE(); // TODO eliminar
+	//sendDHCPRELEASE(); // TODO Eliminar de aki
+	//device_down(IFACE); // TODO Eliminar de aki
 	return true;
 }
 
@@ -289,5 +290,7 @@ void SIGINT_controller(int sigint){
 void SIGUSR2_controller(int sigusr2){
 	printTrace(0, DHCPSIGUSR2, NULL);
 	//Si recive señal se envia DHCPRELEASE nuevo socket ip
+	sendDHCPRELEASE();
+	device_down(IFACE);
 
 }
