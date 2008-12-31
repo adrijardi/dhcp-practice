@@ -60,7 +60,7 @@ int init_sockets() {
 }
 
 void close_sockets() {
-	if(close(sock_packet) < 0)
+	if (close(sock_packet) < 0)
 		perror("close");
 }
 
@@ -131,7 +131,7 @@ int sendDHCPREQUEST() {
 		ret = true;
 	} else {
 		fprintf(stderr,
-				"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
+		"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
 	}
 
 	free(options);
@@ -158,9 +158,9 @@ int sendDHCPRELEASE() {
 	memcpy(dhcp_msg->chaddr, HADDRESS, dhcp_msg->hlen);
 
 	options = malloc(4);
-		opt_size = getDhcpReleaseOptions(options);
-		dhcp_msg->options = (*options);
-		dhcp_msg->opt_length = opt_size;
+	opt_size = getDhcpReleaseOptions(options);
+	dhcp_msg->options = (*options);
+	dhcp_msg->opt_length = opt_size;
 
 	msg = from_mdhcp_to_message(dhcp_msg);
 
@@ -221,9 +221,10 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 		local_addr.sin_family = AF_INET;
 		local_addr.sin_port = htons(CLIENT_PORT);
 
-		ret = bind(sock_inet, (struct sockaddr*)&local_addr, sizeof(struct sockaddr_in));
+		ret = bind(sock_inet, (struct sockaddr*) &local_addr,
+				sizeof(struct sockaddr_in));
 		if (ret < 0)
-				perror("bind");
+			perror("bind");
 		else {
 			ret = sendto(sock_inet, msg, len, 0, (struct sockaddr*) &addr_inet,
 					sizeof(struct sockaddr_in));
@@ -281,7 +282,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 					str_serv_addr = inet_ntoa(serv_addr_temp);
 					str_ip_addr = inet_ntoa(ip_addr_temp);
 					//TODO esta mal? no une bien las cadenas?
-					sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
+				sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
 
 					printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
 
@@ -347,7 +348,8 @@ int get_ACK_message() {
 		}
 	}
 	ret = num_dhcp;
-	free(dhcp_recv.options);
+	if(dhcp_recv.opt_length> 0)
+		free(dhcp_recv.options);
 	free(buf);
 
 	return ret;
