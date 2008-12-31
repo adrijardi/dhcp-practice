@@ -81,7 +81,6 @@ struct msg_dhcp_t* from_mdhcp_to_message(struct mdhcp_t *str_dhcp) {
 
 struct mdhcp_t* new_default_mdhcp() {
 	struct mdhcp_t *ret;
-	int s;
 	ret = malloc(sizeof(struct mdhcp_t));
 	ret->op = 0;
 	ret->htype = 1;
@@ -94,12 +93,9 @@ struct mdhcp_t* new_default_mdhcp() {
 	ret->yiaddr = 0;
 	ret->siaddr = 0;
 	ret->giaddr = 0;
-	s = strlen(ret->chaddr);
-	bzero(ret->chaddr, s);
-	s = strlen(ret->sname);
-	bzero(ret->sname, s);
-	s = strlen(ret->file);
-	bzero(ret->file, s);
+	bzero(ret->chaddr, 16);
+	bzero(ret->sname, 64);
+	bzero(ret->file, 128);
 	ret->opt_length = 0;
 	ret->options = NULL;
 
