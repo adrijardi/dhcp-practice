@@ -17,8 +17,10 @@ struct sockaddr_ll addr_packet; // Dirección de envio
 
 int init_sockets() {
 	int ret = 0;
+	int on = 1;
 	// Creación del socket de recepción
 	sock_packet = socket(PF_PACKET,SOCK_DGRAM, htons(ETH_P_IP));
+	setsockopt(sock_packet, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int));
 	if (sock_packet < 0) {
 		perror("socket");
 		ret = -1;
@@ -215,8 +217,10 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 	struct sockaddr_in addr_inet;
 	struct sockaddr_in local_addr;
 	int ret = 0;
+	int on = 1;
 
 	sock_inet = socket(AF_INET,SOCK_DGRAM, 0);
+	setsockopt(sock_inet, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(int));
 	if (sock_inet < 0)
 		perror("socket");
 	else {
@@ -226,7 +230,7 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 
 		local_addr.sin_addr = SELECTED_ADDRESS;
 		local_addr.sin_family = AF_INET;
-		local_addr.sin_port = htons(CLIENT_PORT+2);
+		local_addr.sin_port = htons(CLIENT_PORT);
 
 		ret = bind(sock_inet, (struct sockaddr*)&local_addr, sizeof(struct sockaddr_in));
 		if (ret < 0)
