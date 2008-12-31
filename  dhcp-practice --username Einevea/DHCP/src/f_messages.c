@@ -515,6 +515,48 @@ int getDhcpRequestOptions(char** opt) {
 	return size;
 }
 
+int getDhcpReleaseOptions(char** opt) {
+	int p, size;
+	u_int32_t aux_lease;
+	u_int8_t magic_c[4];
+	u_int8_t msg_type[3];
+	u_int8_t srv_ident[6];
+	u_int8_t end_opt;
+
+	aux_lease = LEASE;
+
+	magic_c[0] = 99;
+	magic_c[1] = 130;
+	magic_c[2] = 83;
+	magic_c[3] = 99;
+
+	msg_type[0] = 0x35;
+	msg_type[1] = 0x1;
+	msg_type[2] = 0x7;
+
+	srv_ident[0] = 0x36;
+	srv_ident[1] = 0x4;
+	memcpy(&srv_ident[2], &SERVER_ADDRESS, 4);
+
+	end_opt = 0xFF;
+
+	size = 64;
+	*opt = malloc(size);
+
+	bzero(*opt, size);
+	p = 0;
+	memcpy(*opt, magic_c, 4);
+	p += 4;
+	memcpy(*opt + p, msg_type, 3);
+	p += 3;
+	memcpy(*opt + p, srv_ident, 6);
+	p += 6;
+	memcpy(*opt + p, &end_opt, 1);
+	p += 1;
+
+	return size;
+}
+
 int get_dhcpH_from_ethM(struct mdhcp_t * dhcp, char * msg, int len) {
 	int ip_udp_header_size = 28;
 	struct msg_dhcp_t dhcpM;

@@ -159,6 +159,7 @@ int requesting() {
 
 int bound() {
 	printDebug("bound", "");
+	close_sockets();
 	LEASE = 5;
 	sleep(LEASE); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
 	sendDHCPRELEASE(); // TODO eliminar

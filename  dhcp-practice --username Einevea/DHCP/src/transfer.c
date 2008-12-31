@@ -151,6 +151,8 @@ void * sendDHCPREQUEST(void * arg) {
 int sendDHCPRELEASE() {
 	struct mdhcp_t * dhcp_msg;
 	struct msg_dhcp_t * msg;
+	char ** options;
+	int opt_size;
 	int ret;
 
 	printDebug("sendDHCPRELEASE", "");
@@ -164,9 +166,15 @@ int sendDHCPRELEASE() {
 	memcpy(&dhcp_msg->ciaddr, &SELECTED_ADDRESS.s_addr, sizeof(in_addr_t));
 	memcpy(dhcp_msg->chaddr, HADDRESS, dhcp_msg->hlen);
 
+	options = malloc(4);
+		opt_size = getDhcpReleaseOptions(options);
+		dhcp_msg->options = (*options);
+		dhcp_msg->opt_length = opt_size;
+
 	msg = from_mdhcp_to_message(dhcp_msg);
 
 	ret = sendUDP_Msg(msg->msg, msg->length, &SERVER_ADDRESS);
+	//ret = sendETH_Msg(dhcp_msg, SERVER_ADDRESS.s_addr);
 
 	if (ret >= 0) {
 		printTrace(XID, DHCPRELEASE, "Pedazo cara de culo!");
@@ -174,6 +182,7 @@ int sendDHCPRELEASE() {
 
 	free_mdhcp(dhcp_msg);
 	free_message(msg);
+	free(options);
 	return ret;
 }
 
@@ -204,6 +213,7 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address) {
 int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 	int sock_inet;
 	struct sockaddr_in addr_inet;
+	struct sockaddr_in local_addr;
 	int ret = 0;
 
 	sock_inet = socket(AF_INET,SOCK_DGRAM, 0);
@@ -214,11 +224,20 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 		addr_inet.sin_family = AF_INET;
 		addr_inet.sin_port = htons(SERVER_PORT);
 
-		ret = sendto(sock_inet, msg, len, 0, (struct sockaddr*) &addr_inet,
-				sizeof(struct sockaddr_in));
-		// TODO si ret no es igual al tamaño reenviar el resto
-		if (ret < 0) {
-			perror("sendto");
+		local_addr.sin_addr = SELECTED_ADDRESS;
+		local_addr.sin_family = AF_INET;
+		local_addr.sin_port = htons(CLIENT_PORT+2);
+
+		ret = bind(sock_inet, (struct sockaddr*)&local_addr, sizeof(struct sockaddr_in));
+		if (ret < 0)
+				perror("bind");
+		else {
+			ret = sendto(sock_inet, msg, len, 0, (struct sockaddr*) &addr_inet,
+					sizeof(struct sockaddr_in));
+			// TODO si ret no es igual al tamaño reenviar el resto
+			if (ret < 0) {
+				perror("sendto");
+			}
 		}
 	}
 	close(sock_inet);
