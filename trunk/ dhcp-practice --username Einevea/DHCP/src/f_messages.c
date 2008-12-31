@@ -249,6 +249,7 @@ int getETHMessage(unsigned char** msg, in_addr_t hostname,
 
 	free(*udp_msg);
 	free(udp_msg);
+	free_message(dhcp_msg);
 	return total_size;
 }
 
