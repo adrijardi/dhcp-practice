@@ -33,6 +33,7 @@ int obtain_ifindex();
 void setMSGInfo(struct mdhcp_t ip_list[]);
 int set_device_ip(const char* interface, struct in_addr ip_adress);
 int up_device_if_down(const char* interface);
+void device_down(const char* interface);
 void printDebug(char* method, const char *string, ...);
 
 #endif /* UTILS_H_ */
