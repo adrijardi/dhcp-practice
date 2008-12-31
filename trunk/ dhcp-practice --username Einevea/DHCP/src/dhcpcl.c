@@ -304,7 +304,6 @@ void printParamsError(int err) {
 
 void finalize_all(){
 	printDebug("finalize_all", "");
-	close_sockets();
 	free(lock);
 	free(lock_params);
 	//free(iface);
