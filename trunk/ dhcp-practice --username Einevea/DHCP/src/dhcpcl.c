@@ -13,7 +13,7 @@ void pruebas();
 int checkIFace(char* iface);
 void getFileParams();
 int initialize();
-void *init(void *arg);
+int init();
 int selecting();
 int requesting();
 int bound();
@@ -55,49 +55,31 @@ int main(int argc, const char* argv[]) {
 }
 
 void run() {
-	pthread_t hilo;
-	pthread_attr_t hilo_attr;
 	int isbound = 0;
 	int result = 0;
 
 	while (!isbound) {
-		// Se cierra el lock de control de envio ( no se envia hasta que no se está preparado para recivir )
-		pthread_mutex_lock(lock);
+		result = init();
 
-		//Se lanza un nuevo hilo para el envio
-		pthread_attr_init(&hilo_attr);
-		if (pthread_create(&hilo, &hilo_attr, init, NULL) < 0) //TODO mirar valor de retorno
-			perror("pthread_create");
+		if(result >= 0){
 
-		result = selecting();
+			result = selecting();
 
-		// Se espera por el hilo de envio
-		pthread_join(hilo, NULL);
-
-		if (result >= 0) {
-			if(requesting() >= 0)
-				isbound = 1;
-		} else {
-			//TODO
-			printf("Error 1\n");
-			exit(-1);
+			if (result >= 0) {
+				if(requesting() >= 0)
+					isbound = 1;
+			}
 		}
-		/*} else {
-		 //TODO
-		 printf("Error 2\n");
-		 exit(-1);
-		 }*/
 	}
 	bound();
 }
 
-void *init(void *arg) {
+int init() {
 	printDebug("init", "");
 	// Se espera un numero aleatorio de segundos entre 1 y 10
 	srandom(time(NULL));
 	time_wait((random() % 9000) + 1000);
-	sendDHCPDISCOVER();
-	return NULL;
+	return sendDHCPDISCOVER();
 }
 
 int selecting() {
@@ -105,8 +87,6 @@ int selecting() {
 	int numMessages;
 	int ret = 0;
 	int i;
-	pthread_t hilo;
-	pthread_attr_t hilo_attr;
 	printDebug("selecting", "");
 
 	// Recive los mensaje Offer
@@ -117,19 +97,10 @@ int selecting() {
 		printDebug("selecting", "termina selección ip");
 
 		// Envia dhcp request
-		// Se cierra el lock de control de envio ( no se envia hasta que no se está preparado para recibir )
-		pthread_mutex_lock(lock);
-		pthread_mutex_lock(lock_params);
 
 		printDebug("selecting", "se crea hilo");
-		//Se lanza un nuevo hilo para el envio
-		pthread_attr_init(&hilo_attr);
-		if (pthread_create(&hilo, &hilo_attr, sendDHCPREQUEST,
-				(void *) 0) < 0) //TODO mirar valor de retorno
-			perror("pthread_create");
 
-		pthread_mutex_lock(lock_params);
-		pthread_mutex_unlock(lock_params);
+		ret = sendDHCPREQUEST();
 	}
 	for(i = 0; i < numMessages; i++){
 		free(dhcpMessages[i].options);
@@ -170,16 +141,6 @@ int initialize() {
 	int ret = 0;
 	// Se inicializan los parametros del estado.
 	STATE = INIT;
-	lock = malloc(sizeof(pthread_mutex_t));
-	lock_params = malloc(sizeof(pthread_mutex_t));
-	if (pthread_mutex_init(lock, NULL) < 0) {
-		perror("pthread_mutex_init");
-		exit(-1);
-	}
-	if (pthread_mutex_init(lock_params, NULL) < 0) {
-		perror("pthread_mutex_init");
-		exit(-1);
-	}
 	HADDRESS = NULL;
 	HADDRESS_SIZE = 6;
 	obtainHardwareAddress();
@@ -304,8 +265,6 @@ void printParamsError(int err) {
 
 void finalize_all(){
 	printDebug("finalize_all", "");
-	free(lock);
-	free(lock_params);
 	//free(iface);
 	free(HOSTNAME);
 	free(ADDRESS);

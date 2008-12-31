@@ -27,7 +27,7 @@
 #include "f_messages.h"
 
 int sendDHCPDISCOVER();
-void* sendDHCPREQUEST(void * arg);
+int sendDHCPREQUEST();
 int sendDHCPRELEASE();
 int get_selecting_messages(struct mdhcp_t messages[]);
 int get_ACK_message();

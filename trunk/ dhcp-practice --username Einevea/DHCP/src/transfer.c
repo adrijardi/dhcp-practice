@@ -88,11 +88,7 @@ int sendDHCPDISCOVER() {
 	//memcpy(&dhcpdiscover->options, *options, opt_size);
 	dhcpdiscover->options = *options; //TODO mirar options?
 	dhcpdiscover->opt_length = opt_size;
-	// Prueba
-	//print_mdhcp(dhcpdiscover); //TODO quitar
 
-	// Se controla que el lock esté abierto
-	pthread_mutex_lock(lock);
 	// Se envia el mensaje dhcp discover a broadcast
 	printTrace(XID, DHCPDISCOVER, NULL);
 	if (sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) >= 0) {
@@ -102,25 +98,17 @@ int sendDHCPDISCOVER() {
 		"ERROR: No se ha podido mandar el mensaje dhcpdiscover.\n");
 	}
 
-	// Se libera el lock
-	pthread_mutex_unlock(lock);
-
 	free(options);
 	free_mdhcp(dhcpdiscover);
 	return ret;
 }
 
-void * sendDHCPREQUEST(void * arg) {
+int sendDHCPREQUEST() {
 	int ret = EXIT_ERROR;
 	struct mdhcp_t* dhcpRequest;
 	char ** options;
 	int opt_size;
-	/////struct offerIP selected_ip;
 
-	// Se copian los parámetros y se libera el lock
-	////memcpy(&selected_ip, arg, sizeof(struct offerIP));
-
-	pthread_mutex_unlock(lock_params);
 	printDebug("sendDHCPREQUEST", "enviando dhcpRequest");
 
 	// Se crea la estructura del mensaje con los datos adecuados
@@ -148,7 +136,7 @@ void * sendDHCPREQUEST(void * arg) {
 
 	free(options);
 	free_mdhcp(dhcpRequest);
-	return (void*) ret;
+	return ret;
 }
 
 int sendDHCPRELEASE() {
@@ -267,8 +255,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	// Se establecen los sets de descriptores
 	FD_ZERO(&recvset);
 	FD_SET(sock_packet, &recvset);
-	// Se desbloquea el lock para que se envie el DhcpDiscover
-	pthread_mutex_unlock(lock);
+
 	//Recivimos multiples respuestas
 	ret = 1;
 	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
@@ -326,8 +313,7 @@ int get_ACK_message() {
 	// Se establecen los sets de descriptores
 	FD_ZERO(&recvset);
 	FD_SET(sock_packet, &recvset);
-	// Se desbloquea el lock para que se envie el DhcpDiscover
-	pthread_mutex_unlock(lock);
+
 	//Recivimos multiples respuestas
 	ret = 1;
 	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
