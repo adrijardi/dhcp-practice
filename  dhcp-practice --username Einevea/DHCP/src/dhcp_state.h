@@ -18,7 +18,7 @@ unsigned int XID;
 // Direcciones y Options recibidas;
 struct in_addr SELECTED_ADDRESS;
 struct in_addr SERVER_ADDRESS;
-struct sockaddr* SUBNET_MASK;
+struct sockaddr_in* SUBNET_MASK;
 int ROUTER_LIST_SIZE;
 struct in_addr* ROUTERS_LIST;
 int DOMAIN_LIST_SIZE;

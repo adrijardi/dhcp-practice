@@ -140,6 +140,7 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 	u_int case_;
 	int p, i, h, size, lenght;
 	u_int32_t aux32;
+	u_int32_t aux;
 	SELECTED_ADDRESS.s_addr = ntohl(ip_list[0].yiaddr);
 	SERVER_ADDRESS.s_addr = ntohl(ip_list[0].siaddr);
 
@@ -156,12 +157,16 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 				free(SUBNET_MASK);
 			}
 			SUBNET_MASK = malloc(sizeof(struct sockaddr));
+			bzero(SUBNET_MASK, sizeof(struct sockaddr_in));
 			h = ip_list[0].options[p++];
 			i = 0;
+			aux = 0;
 			while (i < h) {
-				SUBNET_MASK->sa_data[i] = ip_list[0].options[p++];
+				aux = aux << 8;
+				aux += (u_int8_t)ip_list[0].options[p++];
 				i++;
 			}
+			SUBNET_MASK->sin_addr.s_addr = ntohl(aux);
 			break;
 		case 3:
 			//Router List
@@ -240,17 +245,19 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 //////////////////////////////////////////////
 // Set IP adress of interface to value adress
 //////////////////////////////////////////////
-int set_device_ip(const char* interface, struct in_addr ip_address) {
+int set_device_ip() {
 	int test_sock = 0;
-	struct sockaddr_in* addr = NULL;
+	struct sockaddr_in* ip_addr = NULL;
 	struct ifreq ifr;
 
+	// Limpia la estructura
 	memset(&ifr, 0, sizeof(struct ifreq));
-	addr = (struct sockaddr_in *) &(ifr.ifr_addr);
-	memset(addr, 0, sizeof(struct sockaddr_in));
-	//addr->sin_len=sizeof(struct sockaddr_in);
-	addr->sin_family = AF_INET;
-	addr->sin_addr.s_addr = ip_address.s_addr;
+
+	// Establece la ip del cliente
+	ip_addr = (struct sockaddr_in *) &(ifr.ifr_addr);
+	bzero(ip_addr, sizeof(struct sockaddr_in));
+	ip_addr->sin_family = AF_INET;
+	ip_addr->sin_addr.s_addr = SELECTED_ADDRESS.s_addr;
 
 	test_sock = socket(PF_INET,SOCK_DGRAM, 0);
 	if (test_sock == -1) {
@@ -258,15 +265,54 @@ int set_device_ip(const char* interface, struct in_addr ip_address) {
 		return (-1);
 	}
 
-	strncpy(ifr.ifr_name, interface, IFNAMSIZ);
+	// Establece el nombre del dispositivo
+	strncpy(ifr.ifr_name, IFACE, IFNAMSIZ);
 	if (ioctl(test_sock, SIOCSIFADDR, &ifr) != 0) {
 		perror("ioctl");
 		close(test_sock);
 		return (-1);
 	} else {
 		printDebug("set_device_ip", "IP address of '%s' set to '%d'\n",
-				interface, ip_address.s_addr);
-		printDebug("set_device_ip", "pos:%s\n", inet_ntoa(ip_address));
+				IFACE, SELECTED_ADDRESS.s_addr);
+		printDebug("set_device_ip", "pos:%s\n", inet_ntoa(SELECTED_ADDRESS));
+	}
+	close(test_sock);
+	return (0);
+}
+
+//////////////////////////////////////////////
+// Set netmask of interface
+//////////////////////////////////////////////
+int set_device_netmask() {
+	int test_sock = 0;
+	struct sockaddr_in* netmask = NULL;
+	struct ifreq ifr;
+
+	// Limpia la estructura
+	memset(&ifr, 0, sizeof(struct ifreq));
+
+	// Establece la máscara de red
+	netmask = (struct sockaddr_in *) &(ifr.ifr_netmask);
+	bzero(netmask, sizeof(struct sockaddr_in));
+	netmask->sin_family = AF_INET;
+	netmask->sin_addr.s_addr = SUBNET_MASK->sin_addr.s_addr;
+
+	test_sock = socket(PF_INET,SOCK_DGRAM, 0);
+	if (test_sock == -1) {
+		perror("socket");
+		return (-1);
+	}
+
+	// Establece el nombre del dispositivo
+	strncpy(ifr.ifr_name, IFACE, IFNAMSIZ);
+	if (ioctl(test_sock, SIOCSIFNETMASK, &ifr) != 0) {
+		perror("ioctl");
+		close(test_sock);
+		return (-1);
+	} else {
+		printDebug("set_device_netmask", "netmask of '%s' set to '%d'\n",
+				IFACE, SUBNET_MASK->sin_addr.s_addr);
+		printDebug("set_device_netmask", "pos:%s\n", inet_ntoa(SELECTED_ADDRESS));
 	}
 	close(test_sock);
 	return (0);
