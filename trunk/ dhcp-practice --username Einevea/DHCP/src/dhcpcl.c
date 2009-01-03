@@ -47,7 +47,7 @@ int main(int argc, const char* argv[]) {
 		printTrace(0, PID, NULL);
 		getFileParams();
 		if(up_device_if_down(IFACE) < 0)
-			EXIT_VALUE = -1;
+			//EXIT_VALUE = -1; //TODO
 		if (EXIT_VALUE == 0) {
 			initialize();
 			printDebug("main", "Inicializado");
@@ -122,7 +122,8 @@ int requesting() {
 	ack_ok = get_ACK_message();
 	if (ack_ok > 0) {
 		// Establece la ip del dispositivo con ioctl
-		set_device_ip(IFACE, SELECTED_ADDRESS);
+		set_device_ip();
+		set_device_netmask();
 	}
 	return ret;
 

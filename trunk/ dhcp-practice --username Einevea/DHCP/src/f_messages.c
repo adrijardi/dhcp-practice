@@ -428,10 +428,7 @@ int getDhcpRequestOptions(char** opt) {
 	// Subnet Mask
 	sub_mask[0] = 1;
 	sub_mask[1] = 4;
-	sub_mask[2] = SUBNET_MASK->sa_data[0];
-	sub_mask[3] = SUBNET_MASK->sa_data[1];
-	sub_mask[4] = SUBNET_MASK->sa_data[2];
-	sub_mask[5] = SUBNET_MASK->sa_data[3];
+	memcpy(&sub_mask[2], &SUBNET_MASK->sin_addr.s_addr, 32);
 
 	// Router List
 	addr_size = sizeof(struct in_addr);
