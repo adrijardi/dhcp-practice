@@ -10,7 +10,6 @@
 void printParamsError(int err);
 int checkParams(int argc, const char* argv[]);
 void pruebas();
-int checkIFace(char* iface);
 void getFileParams();
 int initialize();
 int init();
@@ -22,6 +21,7 @@ void run();
 void finalize_all();
 void SIGINT_controller(int sigint);
 void SIGUSR2_controller(int sigusr2);
+void defaultValues();
 
 void pruebas() {
 	//pruebaFormatoMsg();
@@ -33,21 +33,12 @@ void pruebas() {
 int main(int argc, const char* argv[]) {
 	signal(SIGINT, SIGINT_controller);
 	signal(SIGUSR2, SIGUSR2_controller);
-	DEBUG = DEBUG_OFF;
-	NO_EXIT = true;
-	LEASE = 0xffffffff;
-	SUBNET_MASK = NULL;
-	ROUTERS_LIST = NULL;
-	DOMAIN_NAME_SERVER_LIST = NULL;
-	DOMAIN_NAME = NULL;
-	//TODO faltan mas parametros por defecto.
+	defaultValues();
 	EXIT_VALUE = checkParams(argc, argv);
 
 	if (EXIT_VALUE == 0) {
 		printTrace(0, PID, NULL);
 		getFileParams();
-		if(up_device_if_down(IFACE) < 0)
-			//EXIT_VALUE = -1; //TODO
 		if (EXIT_VALUE == 0) {
 			initialize();
 			printDebug("main", "Inicializado");
@@ -58,17 +49,35 @@ int main(int argc, const char* argv[]) {
 	return EXIT_VALUE;
 }
 
+void defaultValues() {
+	DEBUG = DEBUG_OFF;
+	NO_EXIT = true;
+	LEASE = 0xffffffff;
+	SUBNET_MASK = NULL;
+	ROUTERS_LIST = NULL;
+	DOMAIN_NAME_SERVER_LIST = NULL;
+	DOMAIN_NAME = NULL;
+	TIMEOUT = 64;
+	ACTUAL_TIMEOUT = 0;
+	BASE_TIMEOUT = 0;
+	PARAM_HOSTNAME = NULL;
+	PARAM_ADDRESS = NULL; //TODO no estoy seguro de esto
+	//TODO faltan mas parametros por defecto.
+}
+
 void run() {
 	int isbound = 0;
 	int result = 0;
 
+	// Se espera un numero aleatorio de segundos entre 1 y 10
+	srandom(time(NULL));
+	time_wait((random() % 9000) + 1000);
+
 	while (!isbound) {
 		result = init();
-
 		if(result >= 0){
 
 			result = selecting();
-
 			if (result >= 0) {
 				if(requesting() >= 0)
 					isbound = 1;
@@ -80,9 +89,6 @@ void run() {
 
 int init() {
 	printDebug("init", "");
-	// Se espera un numero aleatorio de segundos entre 1 y 10
-	srandom(time(NULL));
-	time_wait((random() % 9000) + 1000);
 	return sendDHCPDISCOVER();
 }
 
@@ -166,16 +172,18 @@ int checkParams(int argc, const char* argv[]) {
 	int ret = EXIT_NORMAL;
 	int i, iface_state;
 	char *param, *errPtr;
-
+	//DEBUG = DEBUG_ON;
 	//Se comprueba el numero de parametros
 	if (argc >= 2 && argc <= 11) {
 
 		//Se asigna el iface
 
-		iface_state = checkIFace((char*) argv[1]);
-		if (iface_state == true) {
-			IFACE = (char*) argv[1];
-
+		IFACE = (char*) argv[1];
+		if(up_device_if_down(IFACE) < 0){
+			iface_state = false;
+			EXIT_VALUE = EXIT_ERROR;
+		}else{
+			iface_state = true;
 			for (i = 2; i < argc && ret != -1; i += 2) {
 
 				// Se comprueba que la cadena sea de un parametro acordado
@@ -188,14 +196,21 @@ int checkParams(int argc, const char* argv[]) {
 						printParamsError(1);
 						ret = EXIT_ERROR;
 					}
+					printDebug("checkParams", "-t: %d\n", TIMEOUT);
 
 				} else if (strcmp(param, "-h") == 0 && i + 1 < argc) {
 					param = (char*) argv[i + 1];
-					printf("-h: %s\n", param);
+					PARAM_HOSTNAME = param;
+					printDebug("checkParams", "-h: %s\n", PARAM_HOSTNAME);
 
 				} else if (strcmp(param, "-a") == 0 && i + 1 < argc) {
 					param = (char*) argv[i + 1];
-					printf("-a: %s\n", param);
+					PARAM_ADDRESS = malloc(sizeof(struct in_addr));
+					if(inet_aton(param, PARAM_ADDRESS)==0){
+						printParamsError(3);
+						ret = EXIT_ERROR;
+					}
+					printDebug("checkParams", "-a: %s\n", param);
 
 				} else if (strcmp(param, "-l") == 0 && i + 1 < argc) {
 					//Se asigna el parametro de lease
@@ -206,6 +221,7 @@ int checkParams(int argc, const char* argv[]) {
 						printParamsError(2);
 						ret = EXIT_ERROR;
 					}
+					printDebug("checkParams", "-l: %d\n", LEASE);
 
 				} else if (strcmp(param, "-d") == 0) {
 					//Se activa el modo debug
@@ -218,21 +234,11 @@ int checkParams(int argc, const char* argv[]) {
 					ret = EXIT_ERROR;
 				}
 			}
-		} else {
-			ret = EXIT_ERROR;
 		}
 	} else {
 		printParamsError(0);
 		ret = EXIT_ERROR;
 	}
-	return ret;
-}
-
-int checkIFace(char* iface) {
-	int ret;
-	ret = true;
-	//TODO comprobar iface
-	printDebug("checkIFace", "%d", ret);
 	return ret;
 }
 
@@ -242,27 +248,32 @@ int checkIFace(char* iface) {
 void printParamsError(int err) {
 	switch (err) {
 	case 0:
-		printf(
+		fprintf(stderr,
 				"Error en el numero de parametros, el formato de ejecion es:\n\n dhcpcl interface [-t timeout] [-h hostname] [-a IP address] [-l leasetime] [-d]\n\n");
-		printf(
+		fprintf(stderr,
 				"  −t timeout:\n\tEspecifica durante cuanto tiempo el cliente intenta conseguir una ip.\n\tEl valor por defecto son 64 segundos.\n");
-		printf(
+		fprintf(stderr,
 				"  −h hostname:\n\tIndica la cadena a usar en el campo de opciones host_name del datagrama DHCP.\n");
-		printf(
+		fprintf(stderr,
 				"  −a address:\n\tIndica la ultima direccion IP conocida, para ser enviada en el DHCPDISCOVER.\n");
-		printf(
+		fprintf(stderr,
 				"  −l lease:\n\tEspecifica el valor del temporizador de arriendo sugerido al servidor, el servidor puede sobreescribir este valor.\n\tEl valor por defecto es infinito\n");
-		printf("  −d:\n\tModo de depuracion.\n");
+		fprintf(stderr,"  −d:\n\tModo de depuracion.\n");
 		break;
 	case 1:
-		printf("Error en el formato del valor de timeout.\n");
-		printf(
+		fprintf(stderr,"Error en el formato del valor de timeout.\n");
+		fprintf(stderr,
 				"  −t timeout: utiliza valores enteros que representan segundos.\n");
 		break;
 	case 2:
-		printf("Error en el formato del valor de lease.\n");
-		printf(
+		fprintf(stderr,"Error en el formato del valor de lease.\n");
+		fprintf(stderr,
 				"  −l lease: utiliza valores enteros que representan segundos.\n");
+		break;
+	case 3:
+		fprintf(stderr,"Error en el formato o del valor de IP address.\n");
+		fprintf(stderr,
+				"  −a IP address: utiliza notacion decimal separada por puntos.\n");
 		break;
 	default:
 		break;
@@ -279,12 +290,16 @@ void finalize_all(){
 	free(ROUTERS_LIST);
 	free(DOMAIN_NAME_SERVER_LIST);
 	free(DOMAIN_NAME);
+	if(PARAM_ADDRESS != NULL){
+		free(PARAM_ADDRESS);
+	}
 }
 
 // Sale del programa de manera "abrupta"
 void SIGINT_controller(int sigint){
 	printTrace(0, DHCPSIGINT, NULL);
-	finalize_all();
+	exit(EXIT_NORMAL); //TODO que valor de salida?
+	//finalize_all(); //TODO Necesario?
 }
 
 // Hace DHCPRELEASE y baja la interfaz

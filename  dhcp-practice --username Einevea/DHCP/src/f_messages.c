@@ -360,6 +360,9 @@ int getDhcpDiscoverOptions(char** opt) {
 	u_int32_t aux_lease;
 	u_int8_t magic_c[4];
 	u_int8_t msg_type[3];
+	u_int8_t address[6]; //50
+	u_int8_t host_name[2]; //12
+	int host_name_length;
 	u_int8_t msg_lease[6];
 	u_int8_t end_opt;
 
@@ -373,6 +376,20 @@ int getDhcpDiscoverOptions(char** opt) {
 	msg_type[0] = 0x35;
 	msg_type[1] = 0x1;
 	msg_type[2] = 0x1;
+
+	if(PARAM_ADDRESS != NULL){
+		printDebug("getDhcpDiscoverOptions", "PARAM_ADDRESS");
+		address[0] = 50;
+		address[1] = 4;
+		memcpy(&address[2], &PARAM_ADDRESS->s_addr, 4);
+	}
+
+	if(PARAM_HOSTNAME != NULL){
+		host_name_length = strlen(PARAM_HOSTNAME);
+		printDebug("getDhcpDiscoverOptions", "PARAM_HOSTNAME %d", host_name_length);
+		host_name[0] = 12;
+		host_name[1] = host_name_length;
+	}
 
 	msg_lease[0] = 51;
 	msg_lease[1] = 4;
@@ -395,6 +412,17 @@ int getDhcpDiscoverOptions(char** opt) {
 	p += 4;
 	memcpy(*opt + p, msg_type, 3);
 	p += 3;
+	if (PARAM_ADDRESS != NULL) {
+		memcpy(*opt + p, address, 6);
+		p += 6;
+	}
+
+	if (PARAM_HOSTNAME != NULL) {
+		memcpy(*opt + p, host_name, 6);
+		p += 2;
+		memcpy(*opt + p, PARAM_HOSTNAME, host_name_length);
+		p += host_name_length;
+	}
 	memcpy(*opt + p, msg_lease, 6);
 	p += 6;
 	memcpy(*opt + p, &end_opt, 1);
@@ -428,7 +456,7 @@ int getDhcpRequestOptions(char** opt) {
 	// Subnet Mask
 	sub_mask[0] = 1;
 	sub_mask[1] = 4;
-	memcpy(&sub_mask[2], &SUBNET_MASK->sin_addr.s_addr, 32);
+	memcpy(&sub_mask[2], &SUBNET_MASK->sin_addr.s_addr, 4); //TODO el 4 era un 32
 
 	// Router List
 	addr_size = sizeof(struct in_addr);
