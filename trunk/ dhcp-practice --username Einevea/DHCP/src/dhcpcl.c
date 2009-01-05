@@ -51,7 +51,7 @@ int main(int argc, const char* argv[]) {
 
 void defaultValues() {
 	DEBUG = DEBUG_OFF;
-	NO_EXIT = true;
+	NO_EXIT = TRUE;
 	LEASE = 0xffffffff;
 	SUBNET_MASK = NULL;
 	ROUTERS_LIST = NULL;
@@ -59,32 +59,44 @@ void defaultValues() {
 	DOMAIN_NAME = NULL;
 	TIMEOUT = 64;
 	ACTUAL_TIMEOUT = 0;
-	BASE_TIMEOUT = 0;
+	EXP_TIMEOUT = 0;
 	PARAM_HOSTNAME = NULL;
 	PARAM_ADDRESS = NULL; //TODO no estoy seguro de esto
 	//TODO faltan mas parametros por defecto.
 }
 
 void run() {
-	int isbound = 0;
-	int result = 0;
-
+	int is_requesting, is_nack, time_left;
 	// Se espera un numero aleatorio de segundos entre 1 y 10
 	srandom(time(NULL));
 	time_wait((random() % 9000) + 1000);
 
-	while (!isbound) {
-		result = init();
-		if(result >= 0){
-
-			result = selecting();
-			if (result >= 0) {
-				if(requesting() >= 0)
-					isbound = 1;
+	is_nack = TRUE;
+	is_requesting = FALSE;
+	time_left = TIMEOUT - ACTUAL_TIMEOUT;
+	while (is_nack && EXIT_VALUE == EXIT_NORMAL) {
+		while (!is_requesting && time_left > 0) {
+			printDebug("run","init");
+			if (init() >= 0){
+				printDebug("run","selecting");
+				is_requesting = selecting();
 			}
+			printDebug("run","time_left= %d - %d", TIMEOUT, ACTUAL_TIMEOUT);
+			time_left = TIMEOUT - ACTUAL_TIMEOUT;
+		}
+
+		if (time_left > 0) {
+			printDebug("run","requesting");
+			is_nack = requesting();
+		} else {
+			EXIT_VALUE = EXIT_FAILURE;
+			fprintf(stderr,"Error: Timeout reached \n");
 		}
 	}
-	bound();
+	if (EXIT_VALUE == EXIT_NORMAL) {
+		printDebug("run","bound");
+		EXIT_VALUE = bound();
+	}
 }
 
 int init() {
@@ -95,7 +107,7 @@ int init() {
 int selecting() {
 	struct mdhcp_t dhcpMessages[MAXDHCPOFFERS];
 	int numMessages;
-	int ret = 0;
+	int ret = FALSE;
 	int i;
 	printDebug("selecting", "");
 
@@ -111,17 +123,16 @@ int selecting() {
 		printDebug("selecting", "se crea hilo");
 
 		ret = sendDHCPREQUEST();
-	}
-	for(i = 0; i < numMessages; i++){
-		free(dhcpMessages[i].options);
-	}
 
+		for (i = 0; i < numMessages; i++) {
+			free(dhcpMessages[i].options);
+		}
+	}
 	return ret;
 }
 
 int requesting() {
-	int ret = 0;
-	int ack_ok;
+	int ack_ok, is_nack;
 	printDebug("requesting", "");
 
 	// Recive los mensaje Offer
@@ -131,7 +142,8 @@ int requesting() {
 		set_device_ip();
 		set_device_netmask();
 	}
-	return ret;
+	is_nack = FALSE;//TODO revisar
+	return is_nack;
 
 	//Escuchamos lo que venga
 	//Enviamos dhcpAck dhcpNAck
@@ -146,7 +158,7 @@ int bound() {
 	sleep(LEASE); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
 	//sendDHCPRELEASE(); // TODO Eliminar de aki
 	//device_down(IFACE); // TODO Eliminar de aki
-	return true;
+	return EXIT_NORMAL;
 }
 
 int initialize() {
@@ -180,10 +192,10 @@ int checkParams(int argc, const char* argv[]) {
 
 		IFACE = (char*) argv[1];
 		if(up_device_if_down(IFACE) < 0){
-			iface_state = false;
+			iface_state = FALSE;
 			EXIT_VALUE = EXIT_ERROR;
 		}else{
-			iface_state = true;
+			iface_state = TRUE;
 			for (i = 2; i < argc && ret != -1; i += 2) {
 
 				// Se comprueba que la cadena sea de un parametro acordado

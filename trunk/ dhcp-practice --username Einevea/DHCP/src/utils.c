@@ -40,7 +40,7 @@ void printDebug(char* method, const char *fmt, ...) {
 	va_end (ap);
 
 	timestamp = getTimestamp();
-	if (DEBUG == true) {
+	if (DEBUG == TRUE) {
 		printf("-[%s] {%s} %s\n", timestamp, method, buf);
 	}
 	free(timestamp);
@@ -363,4 +363,13 @@ void device_down(const char* interface) {
 	}
 
 	close(fd);
+}
+
+int pow_utils(int x, int y){
+	int ret,i;
+	ret = 1;
+	for(i = 0; i < y; i++){
+		ret *= x;
+	}
+	return ret;
 }
