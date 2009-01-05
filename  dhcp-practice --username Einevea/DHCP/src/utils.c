@@ -318,6 +318,10 @@ int set_device_netmask() {
 	return (0);
 }
 
+// TODO Para el gateway:
+// ifr.dstaddr
+// ioctl SIOCSIFDSTADDR
+
 // Comprueba si el interfaz está desactivado, y en ese caso lo activa
 // si el interfaz no estaba desactivado previamente devuelve -1
 int up_device_if_down(const char* interface) {
