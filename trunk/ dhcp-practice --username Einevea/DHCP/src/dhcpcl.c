@@ -61,8 +61,8 @@ void defaultValues() {
 	ACTUAL_TIMEOUT = 0;
 	EXP_TIMEOUT = 0;
 	PARAM_HOSTNAME = NULL;
-	PARAM_ADDRESS = NULL; //TODO no estoy seguro de esto
-	//TODO faltan mas parametros por defecto.
+	PARAM_ADDRESS = NULL;
+	//TODO faltan mas parametros por defecto?.
 }
 
 void run() {
@@ -154,7 +154,7 @@ int requesting() {
 int bound() {
 	printDebug("bound", "");
 	close_sockets();
-	LEASE = 5;
+	LEASE = 5; //TODO Quitar luego
 	sleep(LEASE); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
 	//sendDHCPRELEASE(); // TODO Eliminar de aki
 	//device_down(IFACE); // TODO Eliminar de aki
@@ -173,7 +173,7 @@ int initialize() {
 }
 
 void getFileParams() {
-	printDebug("getFileParams", "Obtenemos parametros?");
+	printDebug("getFileParams", "¿¿Obtenemos parametros de fichero??");
 }
 
 /*
@@ -310,8 +310,8 @@ void finalize_all(){
 // Sale del programa de manera "abrupta"
 void SIGINT_controller(int sigint){
 	printTrace(0, DHCPSIGINT, NULL);
-	exit(EXIT_NORMAL); //TODO que valor de salida?
 	//finalize_all(); //TODO Necesario?
+	exit(EXIT_NORMAL); //TODO que valor de salida?
 }
 
 // Hace DHCPRELEASE y baja la interfaz
@@ -320,5 +320,6 @@ void SIGUSR2_controller(int sigusr2){
 	//Si recive señal se envia DHCPRELEASE nuevo socket ip
 	sendDHCPRELEASE();
 	device_down(IFACE);
-
+	finalize_all(); // TODO Necesario?
+	exit(EXIT_NORMAL); // TODO que valor de salida?
 }
