@@ -441,6 +441,8 @@ int getDhcpRequestOptions(char** opt) {
 	char* dn_list;
 	int addr_size;
 	u_int8_t serv_ident[6];
+	u_int8_t host_name[2]; //12
+	int host_name_length;
 	u_int8_t msg_lease[6];
 	u_int8_t end_opt;
 
@@ -456,7 +458,7 @@ int getDhcpRequestOptions(char** opt) {
 	// Subnet Mask
 	sub_mask[0] = 1;
 	sub_mask[1] = 4;
-	memcpy(&sub_mask[2], &SUBNET_MASK->sin_addr.s_addr, 4); //TODO el 4 era un 32
+	memcpy(&sub_mask[2], &SUBNET_MASK->sin_addr.s_addr, 4);
 
 	// Router List
 	addr_size = sizeof(struct in_addr);
@@ -493,6 +495,14 @@ int getDhcpRequestOptions(char** opt) {
 		i++;
 	}
 
+	if (PARAM_HOSTNAME != NULL) {
+		host_name_length = strlen(PARAM_HOSTNAME);
+		printDebug("getDhcpDiscoverOptions", "PARAM_HOSTNAME %d",
+				host_name_length);
+		host_name[0] = 12;
+		host_name[1] = host_name_length;
+	}
+
 	aux32 = LEASE;
 	msg_lease[0] = 51;
 	msg_lease[1] = 4;
@@ -525,6 +535,12 @@ int getDhcpRequestOptions(char** opt) {
 	p += (2 + (ROUTER_LIST_SIZE * addr_size));
 	memcpy(*opt + p, dn_list, (2 + (DOMAIN_LIST_SIZE * addr_size)));
 	p += (2 + (DOMAIN_LIST_SIZE * addr_size));
+	if (PARAM_HOSTNAME != NULL) {
+		memcpy(*opt + p, host_name, 6);
+		p += 2;
+		memcpy(*opt + p, PARAM_HOSTNAME, host_name_length);
+		p += host_name_length;
+	}
 	memcpy(*opt + p, msg_lease, 6);
 	p += 6;
 	memcpy(*opt + p, serv_ident, 6);
