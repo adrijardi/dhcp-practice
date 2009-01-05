@@ -36,5 +36,6 @@ int set_device_netmask();
 int up_device_if_down(const char* interface);
 void device_down(const char* interface);
 void printDebug(char* method, const char *string, ...);
+int pow_utils(int, int);
 
 #endif /* UTILS_H_ */

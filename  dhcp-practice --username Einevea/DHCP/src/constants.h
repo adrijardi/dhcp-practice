@@ -15,8 +15,8 @@
 #define DEBUG_OFF	0
 
 //Valores booleanos
-#define false 0
-#define true 1
+#define FALSE 0
+#define TRUE 1
 
 //Valores de salida del programa
 #define EXIT_ERROR	-1

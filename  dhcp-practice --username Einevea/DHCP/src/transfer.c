@@ -4,7 +4,6 @@
  *  Created on: 06-nov-2008
  *      Author: dconde
  */
-
 #include "transfer.h"
 
 //Metodos internos
@@ -92,7 +91,7 @@ int sendDHCPDISCOVER() {
 	// Se envia el mensaje dhcp discover a broadcast
 	printTrace(XID, DHCPDISCOVER, NULL);
 	if (sendETH_Msg(dhcpdiscover, INADDR_BROADCAST) >= 0) {
-		ret = true;
+		ret = TRUE;
 	} else {
 		fprintf(stderr,
 		"ERROR: No se ha podido mandar el mensaje dhcpdiscover.\n");
@@ -128,7 +127,7 @@ int sendDHCPREQUEST() {
 	// Se envia el mensaje dhcp request a broadcast
 	if (sendETH_Msg(dhcpRequest, INADDR_BROADCAST) >= 0) {
 		printTrace(XID, DHCPREQUEST, inet_ntoa(SERVER_ADDRESS));
-		ret = true;
+		ret = TRUE;
 	} else {
 		fprintf(stderr,
 		"ERROR: No se ha podido mandar el mensaje dhcpRequest.\n");
@@ -259,17 +258,22 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 
 	//Recivimos multiples respuestas
 	ret = 1;
-	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
-		// Tiempo de espera del select - Hay que hacerlo en cada iteracción del buble
-		tv.tv_sec = 10; // TODO Cuanto tiempo hay que esperar?
-		tv.tv_usec = 0;
 
+	// Tiempo de espera del select - Hay que hacerlo en cada iteracción del buble
+	tv.tv_sec = pow_utils(2,EXP_TIMEOUT);
+	tv.tv_usec = 0;
+	ACTUAL_TIMEOUT += tv.tv_sec;
+	EXP_TIMEOUT++;
+	printDebug("get_selecting_messages", "Timeout sec:%d, actual:%d, exp:%d", tv.tv_sec, ACTUAL_TIMEOUT, EXP_TIMEOUT);
+
+	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
 		ret = select(sock_packet + 1, &recvset, NULL, NULL, &tv);
+		printDebug("get_selecting_messages", "Timeout sec:%d, actual:%d, exp:%d",tv.tv_sec, ACTUAL_TIMEOUT, EXP_TIMEOUT);
 		if(ret < 0) {
 			perror("select");
+			printDebug("get_selecting_messages", "Fin timeout?");
 		} else if(ret> 0) {
 			int recv_size = recvfrom(sock_packet, buf, 1000, 0, NULL, NULL);
-			printDebug("get_selecting_messages", "Recibido %d", recv_size);
 
 			get_dhcpH_from_ethM(&messages[num_dhcp], buf, recv_size);
 
@@ -282,15 +286,15 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 					str_serv_addr = inet_ntoa(serv_addr_temp);
 					str_ip_addr = inet_ntoa(ip_addr_temp);
 					//TODO esta mal? no une bien las cadenas?
-				sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
+					sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
 
 					printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
 
 					free(msg_string);
 					printDebug("get_selecting_messages", "ipOrigen %d",messages[0].siaddr);
-				printDebug("get_selecting_messages", "id %d",messages[0].xid);
+					printDebug("get_selecting_messages", "id %d",messages[0].xid);
 
-				num_dhcp++;
+					num_dhcp++;
 			}else{
 				printDebug("get_selecting_messages", "Distinto Xid");
 				//free(messages[num_dhcp].options); TODO mirar memoria
