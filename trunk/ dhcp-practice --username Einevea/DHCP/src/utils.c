@@ -339,9 +339,10 @@ int up_device_if_down(const char* interface) {
 
 	else{
 		ret = -1;
-		printf("Tu tronco!! que tenemos el dispositivo levantado, ¿que pasa, que quieres que te deje sin red?\n");
+		fprintf(stderr,"ERROR: %s is already enabled\n", interface);
 	}
 	close(fd);
+	ret = 1;//TODO poner bien luego
 	return ret;
 }
 
