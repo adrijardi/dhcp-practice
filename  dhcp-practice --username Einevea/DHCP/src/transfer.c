@@ -242,7 +242,7 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 // Recive todos los mensajes de dhcpOffer
 int get_selecting_messages(struct mdhcp_t messages[]) {
 	fd_set recvset;
-	struct timeval tv;
+	struct timeval tv, init, end;
 	int ret = 1;
 	char * buf = malloc(1000); //TODO
 	int num_dhcp = 0;
@@ -260,15 +260,16 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	ret = 1;
 
 	// Tiempo de espera del select - Hay que hacerlo en cada iteracción del buble
-	tv.tv_sec = pow_utils(2,EXP_TIMEOUT);
-	tv.tv_usec = 0;
-	ACTUAL_TIMEOUT += tv.tv_sec;
-	EXP_TIMEOUT++;
-	printDebug("get_selecting_messages", "Timeout sec:%d, actual:%d, exp:%d", tv.tv_sec, ACTUAL_TIMEOUT, EXP_TIMEOUT);
+	get_next_timeout(&tv);
+	printDebug("get_selecting_messages", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
+	gettimeofday(&init, NULL);
 
 	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
 		ret = select(sock_packet + 1, &recvset, NULL, NULL, &tv);
-		printDebug("get_selecting_messages", "Timeout sec:%d, actual:%d, exp:%d",tv.tv_sec, ACTUAL_TIMEOUT, EXP_TIMEOUT);
+		printDebug("get_selecting_messages", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
+		gettimeofday(&end, NULL);
+		decrease_timeout(&tv, &init, &end);
+
 		if(ret < 0) {
 			perror("select");
 			printDebug("get_selecting_messages", "Fin timeout?");
@@ -309,7 +310,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 
 int get_ACK_message() {
 	fd_set recvset;
-	struct timeval tv;
+	struct timeval tv, init, end;
 	int ret = 1;
 	char * buf = malloc(1000); //TODO
 	struct mdhcp_t dhcp_recv;
@@ -319,14 +320,20 @@ int get_ACK_message() {
 	FD_ZERO(&recvset);
 	FD_SET(sock_packet, &recvset);
 
+	// Tiempo de espera del select TODO- Hay que hacerlo en cada iteracción del buble
+	get_next_timeout(&tv);
+	printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
+	gettimeofday(&init, NULL);
+
 	//Recivimos multiples respuestas
 	ret = 1;
 	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
-		// Tiempo de espera del select - Hay que hacerlo en cada iteracción del buble
-		tv.tv_sec = 10; // TODO Cuanto tiempo hay que esperar?
-		tv.tv_usec = 0;
 
 		ret = select(sock_packet + 1, &recvset, NULL, NULL, &tv);
+		printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
+		gettimeofday(&end, NULL);
+		decrease_timeout(&tv, &init, &end);
+
 		if(ret < 0) {
 			perror("select");
 		} else if(ret> 0) {
