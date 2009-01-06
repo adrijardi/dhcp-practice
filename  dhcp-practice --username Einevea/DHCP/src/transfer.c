@@ -251,6 +251,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	char *str_ip_addr;
 	struct in_addr serv_addr_temp;
 	struct in_addr ip_addr_temp;
+	char * straux;
 	//int packet_size;
 
 	// Se establecen los sets de descriptores
@@ -286,9 +287,17 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 
 						ip_addr_temp.s_addr = ntohl(messages[num_dhcp].yiaddr);
 						serv_addr_temp.s_addr = ntohl(messages[num_dhcp].siaddr);
-						str_serv_addr = inet_ntoa(serv_addr_temp);
-						str_ip_addr = inet_ntoa(ip_addr_temp);
-						//TODO esta mal? no une bien las cadenas? pone la misma ip en los dos lados?
+
+						straux = inet_ntoa(serv_addr_temp);
+						str_serv_addr = malloc(strlen(straux)+1);
+						bzero(str_serv_addr, strlen(straux)+1);
+						memcpy(str_serv_addr, straux, strlen(straux));
+
+						straux = inet_ntoa(ip_addr_temp);
+						str_ip_addr = malloc(strlen(straux)+1);
+						bzero(str_ip_addr, strlen(straux)+1);
+						memcpy(str_ip_addr, straux, strlen(straux));
+
 						sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
 
 						printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
@@ -310,6 +319,8 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	}
 		ret = num_dhcp;
 		free(buf);
+		free(str_serv_addr);
+		free(str_ip_addr);
 
 		return ret;
 	}
