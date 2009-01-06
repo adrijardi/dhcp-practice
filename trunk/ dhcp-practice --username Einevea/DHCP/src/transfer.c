@@ -267,9 +267,9 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 
 	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
 		ret = select(sock_packet + 1, &recvset, NULL, NULL, &tv);
-		printDebug("get_selecting_messages", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
 		gettimeofday(&end, NULL);
 		decrease_timeout(&tv, &init, &end);
+		printDebug("get_selecting_messages", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
 
 		if(ret < 0) {
 			perror("select");
@@ -279,8 +279,8 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 
 			if(get_dhcpH_from_ipM(&messages[num_dhcp], buf, recv_size) >= 0){
 
-				// Se comprueba que el mensaje responda al ultimo Xid
-				if(messages[num_dhcp].xid == XID) {
+				// Se comprueba que el mensaje responda al ultimo Xid y que tenga el mismo chaddr
+				if(messages[num_dhcp].xid == XID && compare_haddress(messages[num_dhcp].chaddr)) {
 					if(isOfferMsg(&messages[num_dhcp]) == 0){
 						msg_string = malloc(60);
 
@@ -288,21 +288,21 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 						serv_addr_temp.s_addr = ntohl(messages[num_dhcp].siaddr);
 						str_serv_addr = inet_ntoa(serv_addr_temp);
 						str_ip_addr = inet_ntoa(ip_addr_temp);
-						//TODO esta mal? no une bien las cadenas?
+						//TODO esta mal? no une bien las cadenas? pone la misma ip en los dos lados?
 						sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
 
 						printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
 
 						free(msg_string);
-						printDebug("get_selecting_messages", "ipOrigen %d",messages[0].siaddr);
-						printDebug("get_selecting_messages", "id %d",messages[0].xid);
+						printDebug("get_selecting_messages", "ipOrigen %d",messages[num_dhcp].siaddr);
+						printDebug("get_selecting_messages", "id %d",messages[num_dhcp].xid);
 
 						num_dhcp++;
 					}else{
 						printDebug("get_selecting_messages", "Mensaje no DHCP Offer");
 					}
 				}else{
-					printDebug("get_selecting_messages", "Distinto Xid");
+					printDebug("get_selecting_messages", "Distinto Xid %d o chaddr %s", messages[num_dhcp].xid, messages[num_dhcp].chaddr);
 					//free(messages[num_dhcp].options); TODO mirar memoria
 				}
 			}else printDebug("get_selecting_messages", "El mensaje no es dhcp\n");
@@ -339,9 +339,9 @@ int get_ACK_message() {
 	while (ret > 0 && ack == -1) {
 		// Select
 		ret = select(sock_packet + 1, &recvset, NULL, NULL, &tv);
-		printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
 		gettimeofday(&end, NULL);
 		decrease_timeout(&tv, &init, &end);
+		printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
 
 		if(ret < 0) {
 			perror("select");
