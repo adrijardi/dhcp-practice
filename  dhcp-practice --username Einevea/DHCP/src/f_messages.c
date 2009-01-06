@@ -470,7 +470,7 @@ int getDhcpRequestOptions(char** opt) {
 	printDebug("getDhcpRequestOptions", "Router_list_size2: %d", 2 + (ROUTER_LIST_SIZE * addr_size));
 	while (i < ROUTER_LIST_SIZE) {
 		printDebug("getDhcpRequestOptions", "Trace: %d", 1);
-		aux32 = htonl(ROUTERS_LIST[i*addr_size].s_addr);
+		aux32 = ROUTERS_LIST[i*addr_size].s_addr;
 		printDebug("getDhcpRequestOptions", "Trace: %d", 2);
 		memcpy(&rout_list[2+(i*addr_size)], &aux32, addr_size);
 		printDebug("getDhcpRequestOptions", "Trace: %d", 3);
@@ -488,7 +488,7 @@ int getDhcpRequestOptions(char** opt) {
 	printDebug("getDhcpRequestOptions", "domain_list_size: %d", DOMAIN_LIST_SIZE);
 	printDebug("getDhcpRequestOptions", "domain_list_size: %d", 2 + (DOMAIN_LIST_SIZE * addr_size));
 	while (i < DOMAIN_LIST_SIZE) {
-		aux32 = htonl(DOMAIN_NAME_SERVER_LIST[i*addr_size].s_addr);
+		aux32 = DOMAIN_NAME_SERVER_LIST[i].s_addr;
 		printDebug("getDhcpRequestOptions", "domain: %u", ntohl(aux32));
 		memcpy(&dn_list[2+(i*addr_size)], &aux32, addr_size);
 		i++;
@@ -693,7 +693,7 @@ int isOfferMsg(struct mdhcp_t* dhcp){
 		pos += 4;
 		while(pos < dhcp -> opt_length && ret == -1){
 			actual = dhcp->options[pos];
-			printf("actual%d\n",actual);
+			printDebug("isOfferMsg","actual%d\n",actual);
 			if(actual == 53){ // Tipo de mensaje
 				// es Offer
 				if(dhcp->options[pos+1] == 1 && dhcp->options[pos+2] == 02)
