@@ -281,22 +281,26 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 
 				// Se comprueba que el mensaje responda al ultimo Xid
 				if(messages[num_dhcp].xid == XID) {
-					msg_string = malloc(60);
+					if(isOfferMsg(&messages[num_dhcp]) == 0){
+						msg_string = malloc(60);
 
-					ip_addr_temp.s_addr = ntohl(messages[num_dhcp].yiaddr);
-					serv_addr_temp.s_addr = ntohl(messages[num_dhcp].siaddr);
-					str_serv_addr = inet_ntoa(serv_addr_temp);
-					str_ip_addr = inet_ntoa(ip_addr_temp);
-					//TODO esta mal? no une bien las cadenas?
-					sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
+						ip_addr_temp.s_addr = ntohl(messages[num_dhcp].yiaddr);
+						serv_addr_temp.s_addr = ntohl(messages[num_dhcp].siaddr);
+						str_serv_addr = inet_ntoa(serv_addr_temp);
+						str_ip_addr = inet_ntoa(ip_addr_temp);
+						//TODO esta mal? no une bien las cadenas?
+						sprintf(msg_string, "%s (offered %s)",str_serv_addr, str_ip_addr);
 
-					printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
+						printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
 
-					free(msg_string);
-					printDebug("get_selecting_messages", "ipOrigen %d",messages[0].siaddr);
-					printDebug("get_selecting_messages", "id %d",messages[0].xid);
+						free(msg_string);
+						printDebug("get_selecting_messages", "ipOrigen %d",messages[0].siaddr);
+						printDebug("get_selecting_messages", "id %d",messages[0].xid);
 
-					num_dhcp++;
+						num_dhcp++;
+					}else{
+						printDebug("get_selecting_messages", "Mensaje no DHCP Offer");
+					}
 				}else{
 					printDebug("get_selecting_messages", "Distinto Xid");
 					//free(messages[num_dhcp].options); TODO mirar memoria

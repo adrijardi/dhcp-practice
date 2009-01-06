@@ -65,15 +65,15 @@ void defaultValues() {
 }
 
 void run() {
-	int is_requesting, is_nack, time_left;
+	int is_requesting, is_ack, time_left;
 	// Se espera un numero aleatorio de segundos entre 1 y 10
 	srandom(time(NULL));
 	time_wait((random() % 9000) + 1000);
 
-	is_nack = TRUE;
+	is_ack = FALSE;
 	is_requesting = FALSE;
 	time_left = TIMEOUT - ACTUAL_TIMEOUT;
-	while (is_nack && EXIT_VALUE == EXIT_NORMAL) {
+	while ((is_ack == FALSE) && (EXIT_VALUE == EXIT_NORMAL)) {
 		reset_timeout();
 		while (!is_requesting && time_left >= 0) {
 			printDebug("run","init");
@@ -87,7 +87,7 @@ void run() {
 		if (time_left > 0) {
 			printDebug("run","requesting");
 			reset_timeout();
-			is_nack = requesting();
+			is_ack = requesting();
 		} else {
 			EXIT_VALUE = EXIT_FAILURE;
 			fprintf(stderr,"FAILURE: Waiting for DHCPOFFER Timeout reached \n");
@@ -129,19 +129,20 @@ int selecting() {
 	return ret;
 }
 
+// 1 -> ack, 0 -> nak, -1 error
 int requesting() {
-	int ack_ok, is_nack;
+	int ack_ok;
 	printDebug("requesting", "");
 
 	// Recive los mensaje Offer
+	// ack_ok 1 -> ack, 0 -> nak, -1 error
 	ack_ok = get_ACK_message();
 	if (ack_ok > 0) {
 		// Establece la ip del dispositivo con ioctl
 		set_device_ip();
 		set_device_netmask();
 	}
-	is_nack = FALSE;//TODO revisar
-	return is_nack;
+	return ack_ok;
 
 	//Escuchamos lo que venga
 	//Enviamos dhcpAck dhcpNAck
