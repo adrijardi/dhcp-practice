@@ -52,5 +52,6 @@ int isDhcp( char* ip, int len);
 int isUdp( char* ip, int len);
 int getIpPacketLen( char* buf, int len);
 int isAckMsg(struct mdhcp_t* dhcp);
+int isOfferMsg(struct mdhcp_t* dhcp);
 
 #endif /* F_MESSAGES_H_ */
