@@ -374,6 +374,45 @@ int set_device_netmask() {
 // ifr.dstaddr
 // ioctl SIOCSIFDSTADDR
 
+//////////////////////////////////////////////
+// Set router of interface
+//////////////////////////////////////////////
+int set_device_router() {
+	int test_sock = 0;
+	struct sockaddr_in* netmask = NULL;
+	struct ifreq ifr;
+
+	// Limpia la estructura
+	memset(&ifr, 0, sizeof(struct ifreq));
+
+	// Establece la máscara de red
+	netmask = (struct sockaddr_in *) &(ifr.ifr_dstaddr);
+	bzero(netmask, sizeof(struct sockaddr_in));
+	netmask->sin_family = AF_INET;
+	netmask->sin_addr.s_addr = SUBNET_MASK->sin_addr.s_addr;
+
+	netmask->sin_addr.s_addr = inet_addr("10.0.2.3");
+
+	test_sock = socket(PF_INET,SOCK_DGRAM, 0);
+	if (test_sock == -1) {
+		perror("socket");
+		return (-1);
+	}
+
+	// Establece el nombre del dispositivo
+	strncpy(ifr.ifr_name, IFACE, IFNAMSIZ);
+	if (ioctl(test_sock, SIOCSIFDSTADDR, &ifr) != 0) {
+		perror("ioctl");
+		close(test_sock);
+		return (-1);
+	} else {
+		printDebug("set_device_netmask", "netmask of '%s' set to '%s'\n",
+				IFACE, inet_ntoa(SUBNET_MASK->sin_addr));
+	}
+	close(test_sock);
+	return (0);
+}
+
 // Comprueba si el interfaz está desactivado, y en ese caso lo activa
 // si el interfaz no estaba desactivado previamente devuelve -1
 int up_device_if_down(const char* interface) {
