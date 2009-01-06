@@ -257,7 +257,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	FD_ZERO(&recvset);
 	FD_SET(sock_packet, &recvset);
 
-	//Recivimos multiples respuestas
+	//Recibimos multiples respuestas
 	ret = 1;
 
 	// Tiempo de espera del select - Hay que hacerlo en cada iteracción del buble
@@ -310,6 +310,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 		return ret;
 	}
 
+// 1 en caso de ACK, 0 en caso de NACK, -1 en caso de error
 int get_ACK_message() {
 	fd_set recvset;
 	struct timeval tv, init, end;
@@ -317,7 +318,7 @@ int get_ACK_message() {
 	char * buf = malloc(1000);
 	//uint buf_ocupation = 0;
 	struct mdhcp_t dhcp_recv;
-	int ack = 0;
+	int ack = -1;
 	int packet_size;
 
 	// Se establecen los sets de descriptores
@@ -329,9 +330,9 @@ int get_ACK_message() {
 	printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
 	gettimeofday(&init, NULL);
 
-	//Recivimos multiples respuestas
+	//Recibimos multiples respuestas
 	ret = 1;
-	while (ret > 0 && ack == 0) {
+	while (ret > 0 && ack == -1) {
 		// Select
 		ret = select(sock_packet + 1, &recvset, NULL, NULL, &tv);
 		printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
@@ -351,15 +352,14 @@ int get_ACK_message() {
 				if(isDhcp(buf, recv_size) == 0){
 					if(get_dhcpH_from_ipM(&dhcp_recv, buf, recv_size) > 0){
 						// Se comprueba que el mensaje responda al ultimo Xid
-							if(dhcp_recv.xid == XID) {
-								ack=1;
-
-								// Si es NACK hay que ponerlo
-							printTrace(dhcp_recv.xid, DHCPACK, "algo va aquí");
+						if(dhcp_recv.xid == XID) {
+							ack = isAckMsg(&dhcp_recv);
+							if(ack == -1){
+								printDebug("get_ACK_message", "El paquete ack no es válido\n");
+							}
 
 							printDebug("get_ACK_message", "ipOrigen %d",dhcp_recv.siaddr);
 							printDebug("get_ACK_message", "id %d",dhcp_recv.xid);
-							// TODO hay que ver que el mensaje sea ACK y no otra mierda
 						} else {
 							printDebug("get_ACK_message", "Distinto Xid");
 							//free(&dhcp_recv); TODO posible memory leak?
@@ -369,22 +369,13 @@ int get_ACK_message() {
 				else printDebug("get_ACK_message", "El paquete no es dhcp\n");
 			}
 			else printDebug("get_ACK_message", "El paquete no es udp\n");
-
-
-			/*else{
-				// Si el paquete no es dhcp y el tamaño es mayor que el tamaño del buffer hay que purgar el resto del paquete
-				if(packet_size > 1000){
-					recvfrom(sock_packet, NULL, packet_size - 1000, 0, NULL, NULL);
-				}
-			}*/
-			// Se quita del buffer la parte ya leida y se desplaza a la izquierda la que no ha sido tratada
-			/*if(packet_size < recv_size){
-				// copia de la parte derecha a la izquierda del buffer sobreescribiendo lo ya usado
-				// se usa memmove en vez de memcpy, ya que las partes de memoria pueden tener posiciones en común
-				memmove((buf +packet_size), buf, recv_size-packet_size);
-			}
-			buf_ocupation = recv_size-packet_size;*/
 		}
+	}
+	if(ack == 0){
+		printTrace(dhcp_recv.xid, DHCPNAK, "algo va aquí"); // TODO
+	}
+	else if(ack == 1){
+		printTrace(dhcp_recv.xid, DHCPACK, "algo va aquí"); //TODO
 	}
 	ret = ack;
 	if(dhcp_recv.opt_length> 0)

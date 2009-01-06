@@ -119,8 +119,6 @@ int selecting() {
 		printDebug("selecting", "termina selección ip");
 
 		// Envia dhcp request
-printf(">>>>>>>>> espera 5sec\n");
-time_wait(10000); //TODO quitar
 		printDebug("selecting", "se crea hilo");
 		ret = sendDHCPREQUEST();
 
