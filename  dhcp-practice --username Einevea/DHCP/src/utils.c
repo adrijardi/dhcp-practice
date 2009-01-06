@@ -9,6 +9,7 @@
 
 char* getNetConfigTrace();
 
+
 char * getTimestamp() {
 	char* timestamp;
 	time_t t;
