@@ -40,5 +40,6 @@ int pow_utils(int, int);
 void reset_timeout();
 void get_next_timeout(struct timeval *tv);
 void decrease_timeout(struct timeval *tv, struct timeval *init, struct timeval *end);
+int compare_haddress(char *);
 
 #endif /* UTILS_H_ */

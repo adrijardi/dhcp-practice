@@ -53,10 +53,21 @@ void decrease_timeout(struct timeval *tv, struct timeval *init, struct timeval *
 		usec = end->tv_usec - init->tv_usec;
 	}else{
 		sec -= 1;
-		usec = 10000000 +(end->tv_usec-init->tv_usec);
+		usec = 1000000 +(end->tv_usec-init->tv_usec);
 	}
 	tv->tv_sec = SEC_TIMEOUT - sec;
-	tv->tv_usec = USEC_TIMEOUT - usec;
+	if(USEC_TIMEOUT >= usec){
+		tv->tv_usec = USEC_TIMEOUT - usec;
+	} else {
+		if (tv->tv_sec <= 0) {
+			tv->tv_sec = 0;
+			tv->tv_usec = 0;
+		} else {
+			tv->tv_sec -= 1;
+			tv->tv_usec = 1000000 + (USEC_TIMEOUT - usec);
+		}
+	}
+	printDebug("decrease_timeout","TO %d.%06d - res %d.%06d = tv %d.%06d ",SEC_TIMEOUT,USEC_TIMEOUT, sec, usec,tv->tv_sec,tv->tv_usec);
 }
 
 void printDebug(char* method, const char *fmt, ...) {
@@ -75,6 +86,17 @@ void printDebug(char* method, const char *fmt, ...) {
 	}
 	free(timestamp);
 	free(buf);
+}
+
+int compare_haddress(char * had){
+	int i, ret;
+	ret = TRUE;
+	for(i = 0; ret == TRUE && i < HADDRESS_SIZE; i++){
+		if(had[i]!= HADDRESS[i])
+			ret = FALSE;
+	}
+	printDebug("compare_haddress","ret %d",ret);
+	return ret;
 }
 
 void printTrace(int xid, enum dhcp_message state, char* str) {
