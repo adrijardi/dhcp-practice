@@ -37,5 +37,8 @@ int up_device_if_down(const char* interface);
 void device_down(const char* interface);
 void printDebug(char* method, const char *string, ...);
 int pow_utils(int, int);
+void reset_timeout();
+void get_next_timeout(struct timeval *tv);
+void decrease_timeout(struct timeval *tv, struct timeval *init, struct timeval *end);
 
 #endif /* UTILS_H_ */

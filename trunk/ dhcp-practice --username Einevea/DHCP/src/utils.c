@@ -29,6 +29,36 @@ char * getTimestamp() {
 	return timestamp;
 }
 
+void reset_timeout(){
+	ACTUAL_TIMEOUT = 4;
+	SEC_TIMEOUT = 0;
+	USEC_TIMEOUT = 0;
+}
+
+void get_next_timeout(struct timeval *tv){
+	double  r;
+	r = (((double)rand()/(double)RAND_MAX)*2)-1;
+	SEC_TIMEOUT = (ACTUAL_TIMEOUT + r);
+	USEC_TIMEOUT = ((ACTUAL_TIMEOUT +r) - SEC_TIMEOUT) *1000000;
+	printDebug("get_next_timeout","r %e, AT %d, ST %d, UT %d",r, ACTUAL_TIMEOUT, SEC_TIMEOUT, USEC_TIMEOUT);
+	tv->tv_sec = SEC_TIMEOUT;
+	tv->tv_usec = USEC_TIMEOUT;
+	ACTUAL_TIMEOUT *=2;
+}
+
+void decrease_timeout(struct timeval *tv, struct timeval *init, struct timeval *end){
+	int sec, usec;
+	sec = end->tv_sec - init->tv_sec;
+	if(end->tv_usec >= init->tv_usec){
+		usec = end->tv_usec - init->tv_usec;
+	}else{
+		sec -= 1;
+		usec = 10000000 +(end->tv_usec-init->tv_usec);
+	}
+	tv->tv_sec = SEC_TIMEOUT - sec;
+	tv->tv_usec = USEC_TIMEOUT - usec;
+}
+
 void printDebug(char* method, const char *fmt, ...) {
 	char *buf;
 	char *timestamp;

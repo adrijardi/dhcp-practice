@@ -58,8 +58,7 @@ void defaultValues() {
 	DOMAIN_NAME_SERVER_LIST = NULL;
 	DOMAIN_NAME = NULL;
 	TIMEOUT = 64;
-	ACTUAL_TIMEOUT = 0;
-	EXP_TIMEOUT = 0;
+	reset_timeout();
 	PARAM_HOSTNAME = NULL;
 	PARAM_ADDRESS = NULL;
 	//TODO faltan mas parametros por defecto?.
@@ -75,7 +74,8 @@ void run() {
 	is_requesting = FALSE;
 	time_left = TIMEOUT - ACTUAL_TIMEOUT;
 	while (is_nack && EXIT_VALUE == EXIT_NORMAL) {
-		while (!is_requesting && time_left > 0) {
+		reset_timeout();
+		while (!is_requesting && time_left >= 0) {
 			printDebug("run","init");
 			if (init() >= 0){
 				printDebug("run","selecting");
@@ -87,10 +87,11 @@ void run() {
 
 		if (time_left > 0) {
 			printDebug("run","requesting");
+			reset_timeout();
 			is_nack = requesting();
 		} else {
 			EXIT_VALUE = EXIT_FAILURE;
-			fprintf(stderr,"Error: Timeout reached \n");
+			fprintf(stderr,"FAILURE: Waiting for DHCPOFFER Timeout reached \n");
 		}
 	}
 	if (EXIT_VALUE == EXIT_NORMAL) {
