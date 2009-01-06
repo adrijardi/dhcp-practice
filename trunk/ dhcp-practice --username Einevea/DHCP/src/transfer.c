@@ -334,6 +334,7 @@ int get_ACK_message() {
 	struct mdhcp_t dhcp_recv;
 	int ack = -1;
 	int packet_size;
+	char tempmsg[50];
 
 	// Se establecen los sets de descriptores
 	FD_ZERO(&recvset);
@@ -385,11 +386,13 @@ int get_ACK_message() {
 			else printDebug("get_ACK_message", "El paquete no es udp\n");
 		}
 	}
+	bzero(tempmsg, 50);
 	if(ack == 0){
-		printTrace(dhcp_recv.xid, DHCPNAK, "algo va aquí"); // TODO
+		printTrace(dhcp_recv.xid, DHCPNAK, NULL);
 	}
 	else if(ack == 1){
-		printTrace(dhcp_recv.xid, DHCPACK, "algo va aquí"); //TODO
+		sprintf(tempmsg, "%s with leasing %d seconds", inet_ntoa(SELECTED_ADDRESS), LEASE);
+		printTrace(dhcp_recv.xid, DHCPACK, tempmsg);
 	}
 	ret = ack;
 	if(dhcp_recv.opt_length> 0)

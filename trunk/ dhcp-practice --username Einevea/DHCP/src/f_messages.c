@@ -667,7 +667,6 @@ int isAckMsg(struct mdhcp_t* dhcp){
 		pos += 4;
 		while(pos < dhcp -> opt_length && ret == -1){
 			actual = dhcp->options[pos];
-			printf("actual%d\n",actual);
 			if(actual == 53){ // Tipo de mensaje
 				// es ACK
 				if(dhcp->options[pos+1] == 1 && dhcp->options[pos+2] == 05)
