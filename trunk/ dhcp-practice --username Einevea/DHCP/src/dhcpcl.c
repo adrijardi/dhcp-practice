@@ -84,7 +84,6 @@ void run() {
 			printDebug("run","time_left= %d - %d", TIMEOUT, ACTUAL_TIMEOUT);
 			time_left = TIMEOUT - ACTUAL_TIMEOUT;
 		}
-
 		if (time_left > 0) {
 			printDebug("run","requesting");
 			reset_timeout();
@@ -120,9 +119,9 @@ int selecting() {
 		printDebug("selecting", "termina selección ip");
 
 		// Envia dhcp request
-
+printf(">>>>>>>>> espera 5sec\n");
+time_wait(10000); //TODO quitar
 		printDebug("selecting", "se crea hilo");
-
 		ret = sendDHCPREQUEST();
 
 		for (i = 0; i < numMessages; i++) {

@@ -595,11 +595,65 @@ int getDhcpReleaseOptions(char** opt) {
 	return size;
 }
 
-int get_dhcpH_from_ethM(struct mdhcp_t * dhcp, char * msg, int len) {
+// Devuelve el tamaño del mensaje de la estructura dhcp delvuelta mediante el puntero al primer parámetro
+// -1 Si no correspondía a una estructura dhcp
+int get_dhcpH_from_ipM(struct mdhcp_t * dhcp, char * ip_msg, int ip_msg_len) {
+	u_int16_t packet_total_len;
 	int ip_udp_header_size = 28;
 	struct msg_dhcp_t dhcpM;
-	dhcpM.msg = (unsigned char *) msg + ip_udp_header_size;
-	dhcpM.length = len - ip_udp_header_size;
+	int ret = 0;
+	int packet_size;
+
+	// Obtenemos el tamaño del paquete desde la cabecera ip
+	packet_total_len = (ip_msg[2] << 8) + ip_msg[3];
+	packet_size = packet_total_len;
+	printDebug("get_dhcpH_from_ipM", "tamaño total del paquete %d\n",packet_total_len);
+
+	// Comprueba que sea udp y en ese caso que sea dhcp
+	if(ip_msg[9] == 0x11){ // UDP
+		if(ip_msg[20] == 0 && ip_msg[21] == 67 && ip_msg[22] == 0 && ip_msg[23] == 68){ // DHCP
+			dhcpM.msg = (unsigned char *) ip_msg + ip_udp_header_size;
+			dhcpM.length = ip_msg_len - ip_udp_header_size;
+			printDebug("get_dhcpH_from_ipM", "el paquete es dhcp\n");
+		}
+		else ret = -1;
+	}
+	else ret = -1;
+
+	if(ret == -1){
+		printDebug("get_dhcpH_from_ipM", "el paquete no es dhcp\n");
+		return -1;
+	}
 
 	return from_message_to_mdhcp(dhcp, &dhcpM);
+}
+
+// si es dhcp devuelve 0, en caso contrario -1
+int isDhcp( char* ip, int len){
+	int ret = -1;
+	if(len >= 28 && ip[9] == 0x11){ // UDP
+			if(ip[20] == 0 && ip[21] == 67 && ip[22] == 0 && ip[23] == 68){
+				ret = 0;
+			}
+	}
+	return ret;
+}
+
+// si es udp devuelve 0, en caso contrario -1
+int isUdp( char* ip, int len){
+	int ret = -1;
+	if(len >= 20 && ip[9] == 0x11){ // UDP
+				ret = 0;
+	}
+	return ret;
+}
+
+// Devuelve el tamaño del paquete ip contenido dentro del buffer pasado
+int getIpPacketLen( char* buf, int len){
+	int ret = -1;
+	if(len >= 20){
+		// Obtenemos el tamaño del paquete desde la cabecera ip
+		ret = (buf[2] << 8) + buf[3];
+	}
+	return ret;
 }

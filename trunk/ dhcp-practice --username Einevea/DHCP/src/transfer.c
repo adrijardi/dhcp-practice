@@ -251,6 +251,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	char *str_ip_addr;
 	struct in_addr serv_addr_temp;
 	struct in_addr ip_addr_temp;
+	//int packet_size;
 
 	// Se establecen los sets de descriptores
 	FD_ZERO(&recvset);
@@ -276,9 +277,9 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 		} else if(ret> 0) {
 			int recv_size = recvfrom(sock_packet, buf, 1000, 0, NULL, NULL);
 
-			get_dhcpH_from_ethM(&messages[num_dhcp], buf, recv_size);
+			if(get_dhcpH_from_ipM(&messages[num_dhcp], buf, recv_size) >= 0){
 
-			// Se comprueba que el mensaje responda al ultimo Xid
+				// Se comprueba que el mensaje responda al ultimo Xid
 				if(messages[num_dhcp].xid == XID) {
 					msg_string = malloc(60);
 
@@ -296,10 +297,11 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 					printDebug("get_selecting_messages", "id %d",messages[0].xid);
 
 					num_dhcp++;
-			}else{
-				printDebug("get_selecting_messages", "Distinto Xid");
-				//free(messages[num_dhcp].options); TODO mirar memoria
-			}
+				}else{
+					printDebug("get_selecting_messages", "Distinto Xid");
+					//free(messages[num_dhcp].options); TODO mirar memoria
+				}
+			}else printDebug("get_selecting_messages", "El mensaje no es dhcp\n");
 		}
 	}
 		ret = num_dhcp;
@@ -312,9 +314,11 @@ int get_ACK_message() {
 	fd_set recvset;
 	struct timeval tv, init, end;
 	int ret = 1;
-	char * buf = malloc(1000); //TODO
+	char * buf = malloc(1000);
+	//uint buf_ocupation = 0;
 	struct mdhcp_t dhcp_recv;
-	int num_dhcp = 0;
+	int ack = 0;
+	int packet_size;
 
 	// Se establecen los sets de descriptores
 	FD_ZERO(&recvset);
@@ -327,8 +331,8 @@ int get_ACK_message() {
 
 	//Recivimos multiples respuestas
 	ret = 1;
-	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
-
+	while (ret > 0 && ack == 0) {
+		// Select
 		ret = select(sock_packet + 1, &recvset, NULL, NULL, &tv);
 		printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
 		gettimeofday(&end, NULL);
@@ -338,27 +342,51 @@ int get_ACK_message() {
 			perror("select");
 		} else if(ret> 0) {
 
+			// Lee un buffer de 1000 bytes
 			int recv_size = recvfrom(sock_packet, buf, 1000, 0, NULL, NULL);
 			printDebug("get_ACK_message", "recibido %d",recv_size);
 
-			get_dhcpH_from_ethM(&dhcp_recv, buf, recv_size);
-			// Se comprueba que el mensaje responda al ultimo Xid
-				if(dhcp_recv.xid == XID) {
-					num_dhcp++;
+			packet_size = getIpPacketLen(buf, recv_size);
+			if(isUdp(buf, recv_size) == 0){
+				if(isDhcp(buf, recv_size) == 0){
+					if(get_dhcpH_from_ipM(&dhcp_recv, buf, recv_size) > 0){
+						// Se comprueba que el mensaje responda al ultimo Xid
+							if(dhcp_recv.xid == XID) {
+								ack=1;
 
-					// Si es NACK hay que ponerlo
-				printTrace(dhcp_recv.xid, DHCPACK, "algo va aquí");
+								// Si es NACK hay que ponerlo
+							printTrace(dhcp_recv.xid, DHCPACK, "algo va aquí");
 
-				printDebug("get_ACK_message", "ipOrigen %d",dhcp_recv.siaddr);
-				printDebug("get_ACK_message", "id %d",dhcp_recv.xid);
-				// TODO hay que ver que el mensaje sea ACK y no otra mierda
-			} else {
-				printDebug("get_ACK_message", "Distinto Xid");
-				//free(&dhcp_recv); TODO posible memory leak?
+							printDebug("get_ACK_message", "ipOrigen %d",dhcp_recv.siaddr);
+							printDebug("get_ACK_message", "id %d",dhcp_recv.xid);
+							// TODO hay que ver que el mensaje sea ACK y no otra mierda
+						} else {
+							printDebug("get_ACK_message", "Distinto Xid");
+							//free(&dhcp_recv); TODO posible memory leak?
+						}
+					}
+				}
+				else printDebug("get_ACK_message", "El paquete no es dhcp\n");
 			}
+			else printDebug("get_ACK_message", "El paquete no es udp\n");
+
+
+			/*else{
+				// Si el paquete no es dhcp y el tamaño es mayor que el tamaño del buffer hay que purgar el resto del paquete
+				if(packet_size > 1000){
+					recvfrom(sock_packet, NULL, packet_size - 1000, 0, NULL, NULL);
+				}
+			}*/
+			// Se quita del buffer la parte ya leida y se desplaza a la izquierda la que no ha sido tratada
+			/*if(packet_size < recv_size){
+				// copia de la parte derecha a la izquierda del buffer sobreescribiendo lo ya usado
+				// se usa memmove en vez de memcpy, ya que las partes de memoria pueden tener posiciones en común
+				memmove((buf +packet_size), buf, recv_size-packet_size);
+			}
+			buf_ocupation = recv_size-packet_size;*/
 		}
 	}
-	ret = num_dhcp;
+	ret = ack;
 	if(dhcp_recv.opt_length> 0)
 		free(dhcp_recv.options);
 	free(buf);
