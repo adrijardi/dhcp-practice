@@ -51,5 +51,6 @@ int get_dhcpH_from_ipM(struct mdhcp_t * dhcp, char * ip_msg, int ip_msg_len);
 int isDhcp( char* ip, int len);
 int isUdp( char* ip, int len);
 int getIpPacketLen( char* buf, int len);
+int isAckMsg(struct mdhcp_t* dhcp);
 
 #endif /* F_MESSAGES_H_ */

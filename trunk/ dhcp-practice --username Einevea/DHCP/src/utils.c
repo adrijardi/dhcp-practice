@@ -104,7 +104,7 @@ void printTrace(int xid, enum dhcp_message state, char* str) {
 			fprintf(stdout,"#[%s] (%u) DHCPACK received: %s.\n", timestamp,
 					xid, str);
 			break;
-		case DHCPNACK:
+		case DHCPNAK:
 			fprintf(stdout,"#[%s] (%u) DHCPNACK received.\n", timestamp, xid);
 			break;
 		case DHCPRELEASE:
@@ -134,6 +134,7 @@ void time_wait(int microsec) {
 	time++;
 }
 
+// Obtiene la dirección hardware
 void obtainHardwareAddress() {
 	int fd;
 	struct ifreq ifr;
@@ -149,6 +150,7 @@ void obtainHardwareAddress() {
 	close(fd);
 }
 
+// Obtiene el identificador de la interfaz de red
 int obtain_ifindex() {
 	int fd;
 	struct ifreq ifr;
@@ -302,9 +304,8 @@ int set_device_ip() {
 		close(test_sock);
 		return (-1);
 	} else {
-		printDebug("set_device_ip", "IP address of '%s' set to '%d'\n",
-				IFACE, SELECTED_ADDRESS.s_addr);
-		printDebug("set_device_ip", "pos:%s\n", inet_ntoa(SELECTED_ADDRESS));
+		printDebug("set_device_ip", "IP address of '%s' set to '%s'\n",
+				IFACE, inet_ntoa(SELECTED_ADDRESS));
 	}
 	close(test_sock);
 	return (0);
@@ -340,9 +341,8 @@ int set_device_netmask() {
 		close(test_sock);
 		return (-1);
 	} else {
-		printDebug("set_device_netmask", "netmask of '%s' set to '%d'\n",
-				IFACE, SUBNET_MASK->sin_addr.s_addr);
-		printDebug("set_device_netmask", "pos:%s\n", inet_ntoa(SELECTED_ADDRESS));
+		printDebug("set_device_netmask", "netmask of '%s' set to '%s'\n",
+				IFACE, inet_ntoa(SUBNET_MASK->sin_addr));
 	}
 	close(test_sock);
 	return (0);

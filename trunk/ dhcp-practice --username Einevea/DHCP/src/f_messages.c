@@ -152,7 +152,7 @@ int from_message_to_mdhcp(struct mdhcp_t * dhcp, struct msg_dhcp_t *message) {
 		dhcp->options = malloc(osize);
 		memcpy(dhcp->options, msg + p, osize);
 	}
-
+	printf("a%d\n",ret);
 	return ret;
 }
 
@@ -602,16 +602,16 @@ int get_dhcpH_from_ipM(struct mdhcp_t * dhcp, char * ip_msg, int ip_msg_len) {
 	int ip_udp_header_size = 28;
 	struct msg_dhcp_t dhcpM;
 	int ret = 0;
-	int packet_size;
 
 	// Obtenemos el tamaño del paquete desde la cabecera ip
 	packet_total_len = (ip_msg[2] << 8) + ip_msg[3];
-	packet_size = packet_total_len;
 	printDebug("get_dhcpH_from_ipM", "tamaño total del paquete %d\n",packet_total_len);
-
+printf("1\n");
 	// Comprueba que sea udp y en ese caso que sea dhcp
 	if(ip_msg[9] == 0x11){ // UDP
+		printf("2\n");
 		if(ip_msg[20] == 0 && ip_msg[21] == 67 && ip_msg[22] == 0 && ip_msg[23] == 68){ // DHCP
+			printf("3\n");
 			dhcpM.msg = (unsigned char *) ip_msg + ip_udp_header_size;
 			dhcpM.length = ip_msg_len - ip_udp_header_size;
 			printDebug("get_dhcpH_from_ipM", "el paquete es dhcp\n");
@@ -625,7 +625,9 @@ int get_dhcpH_from_ipM(struct mdhcp_t * dhcp, char * ip_msg, int ip_msg_len) {
 		return -1;
 	}
 
-	return from_message_to_mdhcp(dhcp, &dhcpM);
+	if(from_message_to_mdhcp(dhcp, &dhcpM) >= 0)
+		return packet_total_len;
+	return -1;
 }
 
 // si es dhcp devuelve 0, en caso contrario -1
@@ -655,5 +657,32 @@ int getIpPacketLen( char* buf, int len){
 		// Obtenemos el tamaño del paquete desde la cabecera ip
 		ret = (buf[2] << 8) + buf[3];
 	}
+	return ret;
+}
+
+// 1 si es Ack, 0 en caso contrario, -1 error
+int isAckMsg(struct mdhcp_t* dhcp){
+	int ret = -1;
+	int pos = 0;
+	char actual;
+
+	if(((u_int8_t)dhcp->options[0]) == 0x63 && ((u_int8_t)dhcp->options[1]) == 0x82 && ((u_int8_t)dhcp->options[2]) == 0x53 && ((u_int8_t)dhcp->options[3]) == 0x63){
+		pos += 4;
+		while(pos < dhcp -> opt_length && ret == -1){
+			actual = dhcp->options[pos];
+			printf("actual%d\n",actual);
+			if(actual == 53){ // Tipo de mensaje
+				// es ACK
+				if(dhcp->options[pos+1] == 1 && dhcp->options[pos+2] == 05)
+					ret = 1;
+				// es NACK
+				else if(dhcp->options[pos+1] == 1 && dhcp->options[pos+2] == 06)
+					ret = 0;
+			}
+			// Se salta el resto de la opción
+			else pos += dhcp->options[pos+1]+2;
+		}
+	}
+	else printDebug("isAckMsg", "Wrong Magic cookie");
 	return ret;
 }
