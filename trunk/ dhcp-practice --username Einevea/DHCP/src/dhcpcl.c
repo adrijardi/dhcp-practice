@@ -141,6 +141,7 @@ int requesting() {
 		// Establece la ip del dispositivo con ioctl
 		set_device_ip();
 		set_device_netmask();
+		int set_device_router();
 	}
 	return ack_ok;
 
