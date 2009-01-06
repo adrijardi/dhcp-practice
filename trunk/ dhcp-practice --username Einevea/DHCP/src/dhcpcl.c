@@ -141,7 +141,11 @@ int requesting() {
 		// Establece la ip del dispositivo con ioctl
 		set_device_ip();
 		set_device_netmask();
-		int set_device_router();
+		if(ROUTER_LIST_SIZE >0){
+			set_device_router();
+		}else{
+			printDebug("Error","eror");//TODO error no hay router
+		}
 	}
 	return ack_ok;
 

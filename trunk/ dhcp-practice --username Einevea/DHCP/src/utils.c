@@ -326,7 +326,7 @@ int set_device_ip() {
 		close(test_sock);
 		return (-1);
 	} else {
-		printDebug("set_device_ip", "IP address of '%s' set to '%s'\n",
+		printDebug("set_device_ip", "IP address of '%s' set to '%s'",
 				IFACE, inet_ntoa(SELECTED_ADDRESS));
 	}
 	close(test_sock);
@@ -363,7 +363,7 @@ int set_device_netmask() {
 		close(test_sock);
 		return (-1);
 	} else {
-		printDebug("set_device_netmask", "netmask of '%s' set to '%s'\n",
+		printDebug("set_device_netmask", "netmask of '%s' set to '%s'",
 				IFACE, inet_ntoa(SUBNET_MASK->sin_addr));
 	}
 	close(test_sock);
@@ -378,37 +378,43 @@ int set_device_netmask() {
 // Set router of interface
 //////////////////////////////////////////////
 int set_device_router() {
+	struct rtentry route;
 	int test_sock = 0;
-	struct sockaddr_in* netmask = NULL;
-	struct ifreq ifr;
+	struct sockaddr_in singw, sindst;
 
-	// Limpia la estructura
-	memset(&ifr, 0, sizeof(struct ifreq));
+	// Limpia las estructuras
+	memset(&singw, 0, sizeof(struct sockaddr));
+	memset(&sindst, 0, sizeof(struct sockaddr));
+	memset(&route, 0, sizeof(struct rtentry));
 
-	// Establece la máscara de red
-	netmask = (struct sockaddr_in *) &(ifr.ifr_dstaddr);
-	bzero(netmask, sizeof(struct sockaddr_in));
-	netmask->sin_family = AF_INET;
-	netmask->sin_addr.s_addr = SUBNET_MASK->sin_addr.s_addr;
+	// Establecemos los parámetros del gateway
+	singw.sin_family = AF_INET;
+	singw.sin_addr.s_addr = htonl(ROUTERS_LIST[0].s_addr); //TODO poner la buena
+	sindst.sin_family = AF_INET;
+	sindst.sin_addr.s_addr = INADDR_ANY;
 
-	netmask->sin_addr.s_addr = inet_addr("10.0.2.3");
+	// Rellenamos la ruta
+	route.rt_dst = *(struct sockaddr *) &sindst;
+	route.rt_gateway = *(struct sockaddr *) &singw;
+	route.rt_flags = RTF_GATEWAY;
+	route.rt_dev = IFACE;
 
-	test_sock = socket(PF_INET,SOCK_DGRAM, 0);
-	if (test_sock == -1) {
+	test_sock = socket(AF_INET,SOCK_DGRAM, 0);
+	if (test_sock < 0) {
 		perror("socket");
 		return (-1);
 	}
 
-	// Establece el nombre del dispositivo
-	strncpy(ifr.ifr_name, IFACE, IFNAMSIZ);
-	if (ioctl(test_sock, SIOCSIFDSTADDR, &ifr) != 0) {
+	// Se borran la misma entrada primero.
+	ioctl(test_sock, SIOCDELRT, &route);
+	if (ioctl(test_sock, SIOCADDRT, &route) < 0) {
 		perror("ioctl");
 		close(test_sock);
 		return (-1);
-	} else {
-		printDebug("set_device_netmask", "netmask of '%s' set to '%s'\n",
-				IFACE, inet_ntoa(SUBNET_MASK->sin_addr));
+	}else{
+		printDebug("set_device_router", "route d %s\tp %s\ti %s ", "0.0.0.0", inet_ntoa(singw.sin_addr),	IFACE);
 	}
+
 	close(test_sock);
 	return (0);
 }

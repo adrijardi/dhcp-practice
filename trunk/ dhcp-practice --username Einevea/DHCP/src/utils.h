@@ -13,8 +13,10 @@
 #include <stdio.h>
 #include <time.h>
 #include <net/if.h>
+#include <net/route.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
 #include <string.h>
