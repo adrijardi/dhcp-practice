@@ -101,3 +101,57 @@ sobre maquias virtuales mirarlo bien
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct rtentry route;
+	struct sockaddr_in singw, sindst;
+	int skfd;
+	int ret = 0;
+
+	skfd = sockets_open();
+	if (skfd < 0)
+		return -1;
+
+	memset(&singw, 0, sizeof(struct sockaddr));
+	memset(&sindst, 0, sizeof(struct sockaddr));
+	singw.sin_family = AF_INET;
+	sindst.sin_family = AF_INET;
+
+	sindst.sin_addr.s_addr = INADDR_ANY;
+	singw.sin_addr.s_addr = inet_addr(ip);
+
+	memset(&route, 0, sizeof(struct rtentry));
+	route.rt_dst = *(struct sockaddr *) &sindst;
+	route.rt_gateway = *(struct sockaddr *) &singw;
+	route.rt_flags = RTF_GATEWAY;
+
+	/* del the route if its set before */
+	ioctl(skfd, SIOCDELRT, &route);
+	if (ioctl(skfd, SIOCADDRT, &route) < 0) {
+		ret = -1;
+	}
+
+	close(skfd);
+	return ret;
+
+
