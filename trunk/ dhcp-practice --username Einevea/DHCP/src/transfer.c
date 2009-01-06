@@ -79,13 +79,13 @@ int sendDHCPDISCOVER() {
 	dhcpdiscover->op = DHCP_OP_BOOTREQUEST;
 	dhcpdiscover->hlen = 6;
 	dhcpdiscover->xid = XID;
-	dhcpdiscover->secs = 0; //TODO preguntar al profesor
+	dhcpdiscover->secs = 0;
 	memcpy(dhcpdiscover->chaddr, HADDRESS, dhcpdiscover->hlen);
 
 	options = malloc(4);
 	opt_size = getDhcpDiscoverOptions(options);
-	//memcpy(&dhcpdiscover->options, *options, opt_size);
-	dhcpdiscover->options = *options; //TODO mirar options?
+
+	dhcpdiscover->options = *options;
 	dhcpdiscover->opt_length = opt_size;
 
 	// Se envia el mensaje dhcp discover a broadcast
@@ -227,7 +227,6 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 		else {
 			ret = sendto(sock_inet, msg, len, 0, (struct sockaddr*) &addr_inet,
 					sizeof(struct sockaddr_in));
-			// TODO si ret no es igual al tamaño reenviar el resto
 			if (ret < 0) {
 				perror("sendto");
 			}
@@ -244,7 +243,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	fd_set recvset;
 	struct timeval tv, init, end;
 	int ret = 1;
-	char * buf = malloc(1000); //TODO
+	char * buf = malloc(1000);
 	int num_dhcp = 0;
 	char * msg_string;
 	char *str_serv_addr;
