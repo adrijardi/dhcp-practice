@@ -23,6 +23,7 @@ struct in_addr SERVER_ADDRESS;
 struct sockaddr_in* SUBNET_MASK;
 int ROUTER_LIST_SIZE;
 struct in_addr* ROUTERS_LIST;
+char * SERVER_HOSTNAME;
 int DOMAIN_LIST_SIZE;
 struct in_addr* DOMAIN_NAME_SERVER_LIST;
 char * DOMAIN_NAME;

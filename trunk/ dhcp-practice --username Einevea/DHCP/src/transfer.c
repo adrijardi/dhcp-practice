@@ -391,7 +391,11 @@ int get_ACK_message() {
 		printTrace(dhcp_recv.xid, DHCPNAK, NULL);
 	}
 	else if(ack == 1){
-		sprintf(tempmsg, "%s with leasing %d seconds", inet_ntoa(SELECTED_ADDRESS), LEASE);
+		if( LEASE == 0xffffffff){
+			sprintf(tempmsg, "%s with leasing inf seconds", inet_ntoa(SELECTED_ADDRESS));
+		}else{
+			sprintf(tempmsg, "%s with leasing %u seconds", inet_ntoa(SELECTED_ADDRESS), LEASE);
+		}
 		printTrace(dhcp_recv.xid, DHCPACK, tempmsg);
 	}
 	ret = ack;

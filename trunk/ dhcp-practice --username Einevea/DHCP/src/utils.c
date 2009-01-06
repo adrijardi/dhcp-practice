@@ -7,6 +7,8 @@
 
 #include "utils.h"
 
+char* getNetConfigTrace();
+
 char * getTimestamp() {
 	char* timestamp;
 	time_t t;
@@ -101,6 +103,7 @@ int compare_haddress(char * had){
 
 void printTrace(int xid, enum dhcp_message state, char* str) {
 	char *timestamp;
+	char *aux;
 	timestamp = getTimestamp();
 
 	if (xid == -1) {
@@ -137,7 +140,10 @@ void printTrace(int xid, enum dhcp_message state, char* str) {
 			fprintf(stdout,"#[%s] PID=%d.\n", timestamp, getpid());
 			break;
 		case IP:
-			fprintf(stdout,"#[%s] IP %s.\n", timestamp, str);
+
+			aux = getNetConfigTrace();
+			fprintf(stdout,"#[%s]%s.\n",timestamp, aux);
+			free(aux);
 			break;
 		case DHCPSIGINT:
 			fprintf(stdout,"#[%s] SIGINT received.\n", timestamp);
@@ -148,6 +154,47 @@ void printTrace(int xid, enum dhcp_message state, char* str) {
 		}
 	}
 	free(timestamp);
+}
+char* getNetConfigTrace(){
+	int ret;
+	char *msg, *aux;
+	ret = 0;
+	aux = malloc(200);
+	msg = malloc(200);
+	bzero(aux, 200);
+	bzero(msg,200);
+
+	//Se rellena la ip y el lease;
+	if (LEASE == 0xffffffff) {
+		sprintf(aux, " IP: %s; leasetime: inf;", inet_ntoa(SELECTED_ADDRESS));
+	}else{
+		sprintf(aux, " IP: %s; leasetime: %u;", inet_ntoa(SELECTED_ADDRESS), LEASE);
+	}
+	//Se rellena la mascara de red
+	sprintf(msg, "%s subnet mask: %s;",aux, inet_ntoa(SUBNET_MASK->sin_addr));
+
+	//Se rellena el router y el hostname del servidor
+	sprintf(aux, "%s router: %s; server hostname %s;",msg, inet_ntoa(ROUTERS_LIST[0]), SERVER_HOSTNAME);
+
+	//Se rellenan los DNS
+	if(DOMAIN_LIST_SIZE >= 1){
+		sprintf(msg, "%s primary DNS: %s;",aux, inet_ntoa(DOMAIN_NAME_SERVER_LIST[0]));
+
+		if(DOMAIN_LIST_SIZE >= 2){
+			sprintf(aux, "%s secondary DNS: %s",msg, inet_ntoa(DOMAIN_NAME_SERVER_LIST[1]));
+		}else{
+			sprintf(aux, "%s secondary DNS: -",msg);
+		}
+	}else{
+		sprintf(msg, "%s primary DNS: -; secondary DNS: -",aux);
+
+	}
+
+
+	//IP %s; leasetime %s; subnet mask %s; router: %s; server hostname %s; primary DNS: %s; secondary DNS: %s
+
+	free(msg);
+	return aux;
 }
 
 void time_wait(int microsec) {
@@ -233,7 +280,7 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 			i = 0;
 			while (i < ROUTER_LIST_SIZE) {
 				memcpy(&aux32, &ip_list[0].options[p + (i * size)], size);
-				ROUTERS_LIST[i * size].s_addr = ntohl(aux32);
+				ROUTERS_LIST[i * size].s_addr = aux32;
 				p += size;
 				i++;
 			}
@@ -249,12 +296,28 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 			DOMAIN_NAME_SERVER_LIST = malloc(size * DOMAIN_LIST_SIZE);
 			i = 0;
 			while (i < DOMAIN_LIST_SIZE) {
-				memcpy(&aux32, &ip_list[0].options[p + (i * size)], size);
+				memcpy(&aux32, &ip_list[0].options[p], size);
 				printDebug("setMSGInfo", "domain: %u", ntohl(aux32));
-				DOMAIN_NAME_SERVER_LIST[i * size].s_addr = ntohl(aux32);
+				DOMAIN_NAME_SERVER_LIST[i].s_addr = aux32;
 				p += size;
 				i++;
 			}
+			break;
+		case 12:
+			//Server Hostname
+			if (SERVER_HOSTNAME != NULL) {
+				free(SERVER_HOSTNAME);
+			}
+
+			h = ip_list[0].options[p++]+1;
+			printDebug("setMSGInfo", "Server hostname length: %d", h);
+			SERVER_HOSTNAME = malloc(h);
+			i = 0;
+			while (i < h-1) {
+				SERVER_HOSTNAME[i] = ip_list[0].options[p++];
+				i++;
+			}
+			SERVER_HOSTNAME[i] = '\0';
 			break;
 		case 15:
 			//Domain Name
@@ -262,29 +325,27 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 				free(DOMAIN_NAME);
 			}
 
-			h = ip_list[0].options[p++];
+			h = ip_list[0].options[p++]+1;
 			DOMAIN_NAME = malloc(h);
 			i = 0;
-			while (i < h) {
+			while (i < h-1) {
 				DOMAIN_NAME[i] = ip_list[0].options[p++];
 				i++;
 			}
+			DOMAIN_NAME[i] = '\0';
 			break;
 		case 51:
 			//Lease time
 			h = ip_list[0].options[p++];
 			i = 0;
 			aux32 = 0;
-			while (i < h) {
-				aux32 = aux32 << 8;
-				aux32 += ip_list[0].options[p++];
-				i++;
-			}
-			LEASE = aux32;
+			memcpy(&aux32, &ip_list[0].options[p], 4);
+			i+=4;
+			LEASE = ntohl(aux32);
 			break;
 		case 0xff:
 			//End Options
-			printf("paso por end\n");
+			printf("paso por end\n"); //TODO
 			break;
 
 		default:
@@ -389,7 +450,7 @@ int set_device_router() {
 
 	// Establecemos los parámetros del gateway
 	singw.sin_family = AF_INET;
-	singw.sin_addr.s_addr = htonl(ROUTERS_LIST[0].s_addr); //TODO poner la buena
+	singw.sin_addr.s_addr = ROUTERS_LIST[0].s_addr; //TODO poner la buena
 	sindst.sin_family = AF_INET;
 	sindst.sin_addr.s_addr = INADDR_ANY;
 

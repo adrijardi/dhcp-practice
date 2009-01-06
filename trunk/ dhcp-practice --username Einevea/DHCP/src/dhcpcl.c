@@ -61,6 +61,7 @@ void defaultValues() {
 	reset_timeout();
 	PARAM_HOSTNAME = NULL;
 	PARAM_ADDRESS = NULL;
+	SERVER_HOSTNAME = NULL;
 	//TODO faltan mas parametros por defecto?.
 }
 
@@ -138,11 +139,12 @@ int requesting() {
 	// ack_ok 1 -> ack, 0 -> nak, -1 error
 	ack_ok = get_ACK_message();
 	if (ack_ok > 0) {
-		// Establece la ip del dispositivo con ioctl
-		set_device_ip();
-		set_device_netmask();
+		// Establece la configuracion de red del dispositivo con ioctl
 		if(ROUTER_LIST_SIZE >0){
+			set_device_ip();
+			set_device_netmask();
 			set_device_router();
+			printTrace(XID,IP,NULL);
 		}else{
 			printDebug("Error","eror");//TODO error no hay router
 		}
@@ -308,6 +310,9 @@ void finalize_all(){
 	free(DOMAIN_NAME);
 	if(PARAM_ADDRESS != NULL){
 		free(PARAM_ADDRESS);
+	}
+	if(SERVER_HOSTNAME != NULL){
+		free(SERVER_HOSTNAME);
 	}
 }
 
