@@ -224,7 +224,6 @@ void obtainHardwareAddress() {
 int obtain_ifindex() {
 	int fd;
 	struct ifreq ifr;
-	//TODO cambiar para que solo obtenga mediante ioctl en la primera petición
 
 	fd = socket(PF_INET,SOCK_DGRAM, 0);
 	strcpy(ifr.ifr_ifrn.ifrn_name, IFACE);
@@ -346,7 +345,7 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 			break;
 		case 0xff:
 			//End Options
-			printf("paso por end\n"); //TODO
+			printDebug("setMSGInfo", "paso por end");
 			break;
 
 		default:
@@ -505,7 +504,6 @@ int up_device_if_down(const char* interface) {
 		fprintf(stderr,"ERROR: %s is already enabled\n", interface);
 	}
 	close(fd);
-	ret = 1;//TODO poner bien luego
 	return ret;
 }
 
