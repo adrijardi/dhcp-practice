@@ -140,14 +140,14 @@ int requesting() {
 	ack_ok = get_ACK_message();
 	if (ack_ok > 0) {
 		// Establece la configuracion de red del dispositivo con ioctl
-		if(ROUTER_LIST_SIZE >0){
 			set_device_ip();
 			set_device_netmask();
+		if(ROUTER_LIST_SIZE >0){
 			set_device_router();
-			printTrace(XID,IP,NULL);
 		}else{
-			printDebug("Error","eror");//TODO error no hay router
+			fprintf(stderr,"WARNING: Waiting no gateway entry\n");
 		}
+		printTrace(XID,IP,NULL);
 	}
 	return ack_ok;
 
@@ -160,10 +160,8 @@ int requesting() {
 int bound() {
 	printDebug("bound", "");
 	close_sockets();
-	LEASE = 5; //TODO Quitar luego
-	sleep(LEASE); // TODO modificar para que funcione de acuerdo al dhcprelease- semaforo
-	//sendDHCPRELEASE(); // TODO Eliminar de aki
-	//device_down(IFACE); // TODO Eliminar de aki
+	sleep(LEASE);
+	device_down(IFACE);
 	return EXIT_NORMAL;
 }
 
@@ -200,6 +198,7 @@ int checkParams(int argc, const char* argv[]) {
 		if(up_device_if_down(IFACE) < 0){
 			iface_state = FALSE;
 			EXIT_VALUE = EXIT_ERROR;
+			ret = EXIT_ERROR;
 		}else{
 			iface_state = TRUE;
 			for (i = 2; i < argc && ret != -1; i += 2) {
@@ -232,12 +231,14 @@ int checkParams(int argc, const char* argv[]) {
 
 				} else if (strcmp(param, "-l") == 0 && i + 1 < argc) {
 					//Se asigna el parametro de lease
-					LEASE = strtol(argv[i + 1], &errPtr, 0);
-					//Se comprueba que no haya habido un error de formato
-					//TODO falta comprobar cuando mandan inf hay que poner lease = 0xffffffff;
-					if (strlen(errPtr) != 0) {
-						printParamsError(2);
-						ret = EXIT_ERROR;
+					if(strcmp(argv[i+1], "inf") != 0){
+						LEASE = strtol(argv[i + 1], &errPtr, 0);
+						//Se comprueba que no haya habido un error de formato
+						//TODO falta comprobar cuando mandan inf hay que poner lease = 0xffffffff;
+						if (strlen(errPtr) != 0) {
+							printParamsError(2);
+							ret = EXIT_ERROR;
+						}
 					}
 					printDebug("checkParams", "-l: %d\n", LEASE);
 
@@ -319,8 +320,8 @@ void finalize_all(){
 // Sale del programa de manera "abrupta"
 void SIGINT_controller(int sigint){
 	printTrace(0, DHCPSIGINT, NULL);
-	//finalize_all(); //TODO Necesario?
-	exit(EXIT_NORMAL); //TODO que valor de salida?
+	finalize_all();
+	exit(EXIT_NORMAL);
 }
 
 // Hace DHCPRELEASE y baja la interfaz
@@ -329,6 +330,6 @@ void SIGUSR2_controller(int sigusr2){
 	//Si recive señal se envia DHCPRELEASE nuevo socket ip
 	sendDHCPRELEASE();
 	device_down(IFACE);
-	finalize_all(); // TODO Necesario?
-	exit(EXIT_NORMAL); // TODO que valor de salida?
+	finalize_all();
+	exit(EXIT_NORMAL);
 }

@@ -236,8 +236,6 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 	return ret;
 }
 
-// TODO comprobar que se cierran todos los socket
-
 // Recive todos los mensajes de dhcpOffer
 int get_selecting_messages(struct mdhcp_t messages[]) {
 	fd_set recvset;
@@ -340,7 +338,6 @@ int get_ACK_message() {
 	FD_ZERO(&recvset);
 	FD_SET(sock_packet, &recvset);
 
-	// Tiempo de espera del select TODO- Hay que hacerlo en cada iteracción del buble
 	get_next_timeout(&tv);
 	printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
 	gettimeofday(&init, NULL);
