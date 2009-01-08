@@ -149,6 +149,7 @@ int sendDHCPRELEASE() {
 	char ** options;
 	int opt_size;
 	int ret;
+	char * msgString;
 
 	printDebug("sendDHCPRELEASE", "");
 	dhcp_msg = new_default_mdhcp();
@@ -172,7 +173,11 @@ int sendDHCPRELEASE() {
 	//ret = sendETH_Msg(dhcp_msg, SERVER_ADDRESS.s_addr);
 
 	if (ret >= 0) {
-		printTrace(XID, DHCPRELEASE, "Pedazo cara de culo!");
+		msgString = malloc(60);
+		bzero(msgString, 60);
+		sprintf(msgString, "%s released", inet_ntoa(SELECTED_ADDRESS));
+		printTrace(XID, DHCPRELEASE, msgString);
+		free(msgString);
 	}
 
 	free_mdhcp(dhcp_msg);
