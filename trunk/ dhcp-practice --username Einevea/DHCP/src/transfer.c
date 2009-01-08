@@ -14,6 +14,7 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * address);
 int sock_packet; // Socket de envio / recepción a nivel packet
 struct sockaddr_ll addr_packet; // Dirección de envio
 
+// Inicializa los sockets de bajo nivel.
 int init_sockets() {
 	int ret = 0;
 	int on = 1;
@@ -58,11 +59,13 @@ int init_sockets() {
 	return ret;
 }
 
+// Cierra los sockets de bajo nivel.
 void close_sockets() {
 	if (close(sock_packet) < 0)
 		perror("close");
 }
 
+// Envía un mensaje DHCPDiscover.
 int sendDHCPDISCOVER() {
 	int ret = EXIT_ERROR;
 	double r;
@@ -102,6 +105,7 @@ int sendDHCPDISCOVER() {
 	return ret;
 }
 
+// Envía un mensaje DHCP REQUEST.
 int sendDHCPREQUEST() {
 	int ret = EXIT_ERROR;
 	struct mdhcp_t* dhcpRequest;
@@ -138,6 +142,7 @@ int sendDHCPREQUEST() {
 	return ret;
 }
 
+// Envía un mensaje DHCP RELEASE, no se utilizan los sockets de bajo nivel.
 int sendDHCPRELEASE() {
 	struct mdhcp_t * dhcp_msg;
 	struct msg_dhcp_t * msg;
@@ -176,6 +181,7 @@ int sendDHCPRELEASE() {
 	return ret;
 }
 
+// Envía mensajes mediante los sockets de bajo nivel, utilizado para enviar DISCOVER y REQUEST
 int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address) {
 	unsigned char** msg;
 	size_t size;
@@ -200,6 +206,7 @@ int sendETH_Msg(struct mdhcp_t *dhcpStuct, in_addr_t address) {
 	return ret;
 }
 
+// Envía mensajes mediante los sockets de alto nivel, utilizado para enviar RELEASE
 int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 	int sock_inet;
 	struct sockaddr_in addr_inet;
@@ -236,7 +243,7 @@ int sendUDP_Msg(unsigned char* msg, uint len, struct in_addr * ip_address) {
 	return ret;
 }
 
-// Recive todos los mensajes de dhcpOffer
+// Recive todos los mensajes de tipo dhcpOffer
 int get_selecting_messages(struct mdhcp_t messages[]) {
 	fd_set recvset;
 	struct timeval tv, init, end;
@@ -260,14 +267,15 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 
 	// Tiempo de espera del select - Hay que hacerlo en cada iteracción del buble
 	get_next_timeout(&tv);
-	printDebug("get_selecting_messages", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
+	printDebug("get_selecting_messages", "Timeout sec:%d, usec:%d", tv.tv_sec,
+			tv.tv_usec);
 	gettimeofday(&init, NULL);
 
 	while (ret > 0 && num_dhcp < MAXDHCPOFFERS) {
 		ret = select(sock_packet + 1, &recvset, NULL, NULL, &tv);
 		gettimeofday(&end, NULL);
 		decrease_timeout(&tv, &init, &end);
-		printDebug("get_selecting_messages", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
+		printDebug("get_selecting_messages", "Timeout sec:%d, usec:%d", tv.tv_sec,tv.tv_usec);
 
 		if(ret < 0) {
 			perror("select");
@@ -314,14 +322,15 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 			}else printDebug("get_selecting_messages", "El mensaje no es dhcp\n");
 		}
 	}
-		ret = num_dhcp;
-		free(buf);
-		free(str_serv_addr);
-		free(str_ip_addr);
+	ret = num_dhcp;
+	free(buf);
+	free(str_serv_addr);
+	free(str_ip_addr);
 
-		return ret;
-	}
+	return ret;
+}
 
+// Obtiene el mensaje ACK o NACK del servidor
 // 1 en caso de ACK, 0 en caso de NACK, -1 en caso de error
 int get_ACK_message() {
 	fd_set recvset;
@@ -339,7 +348,8 @@ int get_ACK_message() {
 	FD_SET(sock_packet, &recvset);
 
 	get_next_timeout(&tv);
-	printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
+	printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec,
+			tv.tv_usec);
 	gettimeofday(&init, NULL);
 
 	//Recibimos multiples respuestas
@@ -383,13 +393,13 @@ int get_ACK_message() {
 			else printDebug("get_ACK_message", "El paquete no es udp\n");
 		}
 	}
-	bzero(tempmsg, 50);
-	if(ack == 0){
-		printTrace(dhcp_recv.xid, DHCPNAK, NULL);
-	}
-	else if(ack == 1){
-		if( LEASE == 0xffffffff){
-			sprintf(tempmsg, "%s with leasing inf seconds", inet_ntoa(SELECTED_ADDRESS));
+				bzero(tempmsg, 50);
+				if(ack == 0) {
+					printTrace(dhcp_recv.xid, DHCPNAK, NULL);
+				}
+				else if(ack == 1) {
+					if( LEASE == 0xffffffff) {
+						sprintf(tempmsg, "%s with leasing inf seconds",inet_ntoa(SELECTED_ADDRESS));
 		}else{
 			sprintf(tempmsg, "%s with leasing %u seconds", inet_ntoa(SELECTED_ADDRESS), LEASE);
 		}

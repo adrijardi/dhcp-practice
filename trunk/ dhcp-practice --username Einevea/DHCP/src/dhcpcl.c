@@ -65,6 +65,7 @@ void defaultValues() {
 	//TODO faltan mas parametros por defecto?.
 }
 
+// Bucle rincipal del programa.
 void run() {
 	int is_requesting, is_ack, time_left;
 	// Se espera un numero aleatorio de segundos entre 1 y 10
@@ -100,11 +101,13 @@ void run() {
 	}
 }
 
+// Estado init del programa.
 int init() {
 	printDebug("init", "");
 	return sendDHCPDISCOVER();
 }
 
+// Estado selecting.
 int selecting() {
 	struct mdhcp_t dhcpMessages[MAXDHCPOFFERS];
 	int numMessages;
@@ -130,7 +133,8 @@ int selecting() {
 	return ret;
 }
 
-// 1 -> ack, 0 -> nak, -1 error
+// Estado requesting
+// Devuelve 1 si recibe ack, 0 si recibe nak, y -1 si se produce algún error
 int requesting() {
 	int ack_ok;
 	printDebug("requesting", "");
@@ -150,13 +154,9 @@ int requesting() {
 		printTrace(XID,IP,NULL);
 	}
 	return ack_ok;
-
-	//Escuchamos lo que venga
-	//Enviamos dhcpAck dhcpNAck
-	//Si falta algo mas tambien lo hacemos
-
 }
 
+// Estado bound
 int bound() {
 	printDebug("bound", "");
 	close_sockets();
@@ -165,10 +165,10 @@ int bound() {
 	return EXIT_NORMAL;
 }
 
+// Inicializa el programa.
 int initialize() {
 	int ret = 0;
 	// Se inicializan los parametros del estado.
-	STATE = INIT;
 	HADDRESS = NULL;
 	HADDRESS_SIZE = 6;
 	obtainHardwareAddress();
@@ -180,10 +180,9 @@ void getFileParams() {
 	printDebug("getFileParams", "¿¿Obtenemos parametros de fichero??");
 }
 
-/*
- * Funcion que comprueba el numero de parametros de entrada, el formato de los mismos
- * y asigna los valores a las variables globales.
- */
+
+// Funcion que comprueba el numero de parametros de entrada, el formato de los mismos
+// y asigna los valores a las variables globales.
 int checkParams(int argc, const char* argv[]) {
 	int ret = EXIT_NORMAL;
 	int i, iface_state;
@@ -261,9 +260,7 @@ int checkParams(int argc, const char* argv[]) {
 	return ret;
 }
 
-/*
- * Funcion que imprime los mensajes de error de los parametros de entrada.
- */
+// Funcion que imprime los mensajes de error de los parametros de entrada.
 void printParamsError(int err) {
 	switch (err) {
 	case 0:
@@ -299,9 +296,9 @@ void printParamsError(int err) {
 	}
 }
 
+// Finaliza la aplicación liberando la memória necesaría.
 void finalize_all(){
 	printDebug("finalize_all", "");
-	//free(iface);
 	free(HOSTNAME);
 	free(ADDRESS);
 	free(HADDRESS);

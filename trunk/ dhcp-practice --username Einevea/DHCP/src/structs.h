@@ -8,6 +8,7 @@
 #ifndef STRUCTS_H_
 #define STRUCTS_H_
 
+// Estructura para dhcp
 struct mdhcp_t{
 	unsigned char op;
 	unsigned char htype;
@@ -27,6 +28,7 @@ struct mdhcp_t{
 	char *options;
 };
 
+// Estructura para mensaje dhcp en cadena de caracteres.
 struct msg_dhcp_t{
 	unsigned int length;
 	unsigned char * msg;
