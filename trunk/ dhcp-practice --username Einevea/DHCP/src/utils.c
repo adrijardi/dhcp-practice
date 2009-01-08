@@ -13,20 +13,24 @@ char* getNetConfigTrace();
 char * getTimestamp() {
 	char* timestamp;
 	time_t t;
-	struct tm *local, *gtm;
+	struct tm local, gtm;
+	struct tm *tmp;
 	int h, m;
 
 	timestamp = malloc(50);
 	t = time(NULL);
-	local = localtime(&t);
-	gtm = gmtime(&t);
-	h = (int) local->tm_gmtoff;
+	tmp = localtime(&t);
+	memcpy(&local, tmp, sizeof(struct tm));
+
+	tmp = gmtime(&t);
+	memcpy(&gtm, tmp, sizeof(struct tm));
+	h = (int) local.tm_gmtoff;
 	m = (h / 60) % 60; //TODO no funciona?
 	h = h / 3600;
 	if (h >= 0)
-		strftime(timestamp, 50, "%Y-%m-%d %H:%M:%S+", local);
+		strftime(timestamp, 50, "%Y-%m-%d %H:%M:%S+", &local);
 	else
-		strftime(timestamp, 50, "%Y-%m-%d %H:%M:%S-", local);
+		strftime(timestamp, 50, "%Y-%m-%d %H:%M:%S-", &local);
 
 	sprintf(timestamp, "%s%.2d:%.2d", timestamp, h, m);
 	return timestamp;
