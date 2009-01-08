@@ -431,10 +431,6 @@ int set_device_netmask() {
 	return (0);
 }
 
-// TODO Para el gateway:
-// ifr.dstaddr
-// ioctl SIOCSIFDSTADDR
-
 //////////////////////////////////////////////
 // Set router of interface
 //////////////////////////////////////////////
@@ -450,7 +446,7 @@ int set_device_router() {
 
 	// Establecemos los parámetros del gateway
 	singw.sin_family = AF_INET;
-	singw.sin_addr.s_addr = ROUTERS_LIST[0].s_addr; //TODO poner la buena
+	singw.sin_addr.s_addr = ROUTERS_LIST[0].s_addr;
 	sindst.sin_family = AF_INET;
 	sindst.sin_addr.s_addr = INADDR_ANY;
 
