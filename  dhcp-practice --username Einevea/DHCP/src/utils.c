@@ -520,7 +520,7 @@ void device_down() {
 	is_up = ifr.ifr_ifru.ifru_flags & IFF_UP;
 
 	if(is_up == 1){
-		ifr.ifr_ifru.ifru_flags = ifr.ifr_ifru.ifru_flags ^ IFF_UP;
+		ifr.ifr_ifru.ifru_flags = ifr.ifr_ifru.ifru_flags & !IFF_UP;
 		ioctl(fd, SIOCSIFFLAGS, &ifr);
 	}
 
