@@ -317,7 +317,8 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 					}
 				}else{
 					printDebug("get_selecting_messages", "Distinto Xid %d o chaddr %s", messages[num_dhcp].xid, messages[num_dhcp].chaddr);
-					//free(messages[num_dhcp].options); TODO mirar memoria
+					if(messages[num_dhcp].opt_length> 0)
+						free(messages[num_dhcp].options);
 				}
 			}else printDebug("get_selecting_messages", "El mensaje no es dhcp\n");
 		}
@@ -384,7 +385,8 @@ int get_ACK_message() {
 							printDebug("get_ACK_message", "id %d",dhcp_recv.xid);
 						} else {
 							printDebug("get_ACK_message", "Distinto Xid");
-							//free(&dhcp_recv); TODO posible memory leak?
+							if(dhcp_recv.opt_length> 0)
+								free(dhcp_recv.options);
 						}
 					}
 				}
@@ -393,13 +395,13 @@ int get_ACK_message() {
 			else printDebug("get_ACK_message", "El paquete no es udp\n");
 		}
 	}
-				bzero(tempmsg, 50);
-				if(ack == 0) {
-					printTrace(dhcp_recv.xid, DHCPNAK, NULL);
-				}
-				else if(ack == 1) {
-					if( LEASE == 0xffffffff) {
-						sprintf(tempmsg, "%s with leasing inf seconds",inet_ntoa(SELECTED_ADDRESS));
+	bzero(tempmsg, 50);
+	if(ack == 0) {
+		printTrace(dhcp_recv.xid, DHCPNAK, NULL);
+	}
+	else if(ack == 1) {
+		if( LEASE == 0xffffffff) {
+			sprintf(tempmsg, "%s with leasing inf seconds",inet_ntoa(SELECTED_ADDRESS));
 		}else{
 			sprintf(tempmsg, "%s with leasing %u seconds", inet_ntoa(SELECTED_ADDRESS), LEASE);
 		}
