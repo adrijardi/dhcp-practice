@@ -2,7 +2,7 @@
  * dhcp_state.h
  *
  *  Created on: 06-nov-2008
- *      Author: dconde
+ *      Author: Daniel Conde y Adrián López
  */
 
 #ifndef DHCP_STATE_H_
