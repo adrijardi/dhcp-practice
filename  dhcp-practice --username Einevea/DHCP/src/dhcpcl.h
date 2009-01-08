@@ -2,7 +2,7 @@
  * dhcpcl.h
  *
  *  Created on: 17-oct-2008
- *      Author: dconde
+ *       Author: Daniel Conde y Adrián López
  */
 
 #ifndef DHCPCL_H_

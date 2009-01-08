@@ -2,7 +2,7 @@
  * dhcpcl.c
  *
  *  Created on: 17-oct-2008
- *      Author: dconde
+ *      Author: Daniel Conde y Adrián López
  */
 #include "dhcpcl.h"
 

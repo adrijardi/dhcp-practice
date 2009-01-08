@@ -2,7 +2,7 @@
  * f_messages.h
  *
  *  Created on: 21-oct-2008
- *      Author: dconde
+ *       Author: Daniel Conde y Adrián López
  */
 
 #ifndef F_MESSAGES_H_

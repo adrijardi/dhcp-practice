@@ -2,7 +2,7 @@
  * utils.c
  *
  *  Created on: 21-oct-2008
- *      Author: dconde
+ *       Author: Daniel Conde y Adrián López
  */
 
 #include "utils.h"
