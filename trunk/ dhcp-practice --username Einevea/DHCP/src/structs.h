@@ -2,7 +2,7 @@
  * structs.h
  *
  *  Created on: 24-dic-2008
- *      Author: adri
+ *       Author: Daniel Conde y Adrián López
  */
 
 #ifndef STRUCTS_H_
