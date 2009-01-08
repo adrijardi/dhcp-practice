@@ -25,7 +25,7 @@ char * getTimestamp() {
 	tmp = gmtime(&t);
 	memcpy(&gtm, tmp, sizeof(struct tm));
 	h = (int) local.tm_gmtoff;
-	m = (h / 60) % 60; //TODO no funciona?
+	m = (h / 60) % 60;
 	h = h / 3600;
 	if (h >= 0)
 		strftime(timestamp, 50, "%Y-%m-%d %H:%M:%S+", &local);

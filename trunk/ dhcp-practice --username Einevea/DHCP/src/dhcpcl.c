@@ -62,7 +62,6 @@ void defaultValues() {
 	PARAM_HOSTNAME = NULL;
 	PARAM_ADDRESS = NULL;
 	SERVER_HOSTNAME = NULL;
-	//TODO faltan mas parametros por defecto?.
 }
 
 // Bucle rincipal del programa.
@@ -233,7 +232,6 @@ int checkParams(int argc, const char* argv[]) {
 					if(strcmp(argv[i+1], "inf") != 0){
 						LEASE = strtol(argv[i + 1], &errPtr, 0);
 						//Se comprueba que no haya habido un error de formato
-						//TODO falta comprobar cuando mandan inf hay que poner lease = 0xffffffff;
 						if (strlen(errPtr) != 0) {
 							printParamsError(2);
 							ret = EXIT_ERROR;
