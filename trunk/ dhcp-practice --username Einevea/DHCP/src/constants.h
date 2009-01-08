@@ -24,14 +24,13 @@
 #define EXIT_NO_RESPONSE	1
 
 //Estados del cliente
-enum dhcp_states {INIT=1, SELECTING=2, REQUESTING=3, BOUND=4, RENEWING=5, REBINDING=6, REBOOTING=7, INIT_REBOOT=8 };
 enum dhcp_message {DHCPDISCOVER=1, DHCPOFFER=2, DHCPREQUEST=3, DHCPACK=4, DHCPNAK=5, DHCPRELEASE=6, PID=7, IP=8, DHCPSIGINT=9, DHCPSIGUSR2=10};
 //server port
 #define SERVER_PORT 67
 //client port
 #define CLIENT_PORT 68
 
-
+// Número máximo de ofertas que se escuchan.
 #define MAXDHCPOFFERS 10
 
 #endif /* CONSTANTS_H_ */
