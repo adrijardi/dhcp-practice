@@ -37,7 +37,7 @@ int set_device_ip();
 int set_device_netmask();
 int set_device_router();
 int up_device_if_down(const char* interface);
-void device_down(const char* interface);
+void device_down();
 void printDebug(char* method, const char *string, ...);
 int pow_utils(int, int);
 void reset_timeout();

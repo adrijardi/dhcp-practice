@@ -9,7 +9,7 @@
 
 char* getNetConfigTrace();
 
-
+// Obtiene la marca de tiempo en una cadena de caracteres.
 char * getTimestamp() {
 	char* timestamp;
 	time_t t;
@@ -77,6 +77,7 @@ void decrease_timeout(struct timeval *tv, struct timeval *init, struct timeval *
 	printDebug("decrease_timeout","TO %d.%06d - res %d.%06d = tv %d.%06d ",SEC_TIMEOUT,USEC_TIMEOUT, sec, usec,tv->tv_sec,tv->tv_usec);
 }
 
+// Imprime trazas de debuf, solo en el caso de que la aplicación esté en modo DEBUG.
 void printDebug(char* method, const char *fmt, ...) {
 	char *buf;
 	char *timestamp;
@@ -95,6 +96,7 @@ void printDebug(char* method, const char *fmt, ...) {
 	free(buf);
 }
 
+// Compara dos direcciones hardware, devuelve 1 en caso de que sean iguales y 0 si no lo son.
 int compare_haddress(char * had){
 	int i, ret;
 	ret = TRUE;
@@ -106,6 +108,7 @@ int compare_haddress(char * had){
 	return ret;
 }
 
+// Imprime una traza de programa, solo está definidas aquí las trazas estandar de salida.
 void printTrace(int xid, enum dhcp_message state, char* str) {
 	char *timestamp;
 	char *aux;
@@ -160,6 +163,8 @@ void printTrace(int xid, enum dhcp_message state, char* str) {
 	}
 	free(timestamp);
 }
+
+
 char* getNetConfigTrace(){
 	int ret;
 	char *msg, *aux;
@@ -205,10 +210,10 @@ char* getNetConfigTrace(){
 void time_wait(int microsec) {
 	unsigned long time = microsec * 1000;
 	usleep(time);
-	time++;
+	time++; //TODO LOL
 }
 
-// Obtiene la dirección hardware
+// Obtiene la dirección hardware del actual equipo.
 void obtainHardwareAddress() {
 	int fd;
 	struct ifreq ifr;
@@ -224,7 +229,7 @@ void obtainHardwareAddress() {
 	close(fd);
 }
 
-// Obtiene el identificador de la interfaz de red
+// Obtiene el identificador de la interfaz de red.
 int obtain_ifindex() {
 	int fd;
 	struct ifreq ifr;
@@ -240,6 +245,7 @@ int obtain_ifindex() {
 
 	return ifr.ifr_ifru.ifru_ivalue;
 }
+
 
 void setMSGInfo(struct mdhcp_t ip_list[]) {
 	u_int case_;
@@ -361,9 +367,7 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 	}
 }
 
-//////////////////////////////////////////////
-// Set IP adress of interface to value adress
-//////////////////////////////////////////////
+// Establece la dirección ip del intefaz.
 int set_device_ip() {
 	int test_sock = 0;
 	struct sockaddr_in* ip_addr = NULL;
@@ -398,9 +402,7 @@ int set_device_ip() {
 	return (0);
 }
 
-//////////////////////////////////////////////
-// Set netmask of interface
-//////////////////////////////////////////////
+// Establece la máscara de subred del interfaz.
 int set_device_netmask() {
 	int test_sock = 0;
 	struct sockaddr_in* netmask = NULL;
@@ -435,9 +437,7 @@ int set_device_netmask() {
 	return (0);
 }
 
-//////////////////////////////////////////////
-// Set router of interface
-//////////////////////////////////////////////
+// Establece la puerta de enlace del interfaz.
 int set_device_router() {
 	struct rtentry route;
 	int test_sock = 0;
@@ -507,7 +507,8 @@ int up_device_if_down(const char* interface) {
 	return ret;
 }
 
-void device_down(const char* interface) {
+// Desactiva el interfaz.
+void device_down() {
 	int fd;
 	struct ifreq ifr;
 	int is_up;
@@ -526,6 +527,8 @@ void device_down(const char* interface) {
 	close(fd);
 }
 
+// Eleva un número al otro, parece que no sirve para nada, ya que se podría hacer con x^y
+// pero tiene funcionamientos ocultos.
 int pow_utils(int x, int y){
 	int ret,i;
 	ret = 1;
