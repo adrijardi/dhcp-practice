@@ -68,14 +68,19 @@ void defaultValues() {
 void run() {
 	int is_requesting, is_ack, time_left;
 	// Se espera un numero aleatorio de segundos entre 1 y 10
-	srandom(time(NULL));
-	time_wait((random() % 9000) + 1000);
+	if(DEBUG == DEBUG_OFF){
+		srandom(time(NULL));
+		time_wait((random() % 9000) + 1000);
+	}
 
 	is_ack = FALSE;
 	is_requesting = FALSE;
 	time_left = TIMEOUT - ACTUAL_TIMEOUT;
 	while ((is_ack == FALSE) && (EXIT_VALUE == EXIT_NORMAL)) {
+		is_requesting = FALSE;
 		reset_timeout();
+		time_left = TIMEOUT - ACTUAL_TIMEOUT;
+		printDebug("run","time_left REQUESTING %d", time_left);
 		while (!is_requesting && time_left >= 0) {
 			printDebug("run","init");
 			if (init() >= 0){
@@ -88,10 +93,21 @@ void run() {
 		if (time_left > 0) {
 			printDebug("run","requesting");
 			reset_timeout();
-			is_ack = requesting();
+			time_left = TIMEOUT - ACTUAL_TIMEOUT;
+			printDebug("run","time_left ack %d", time_left);
+			is_ack= -1;
+			while ((is_ack== -1) && time_left >= 0) {
+				is_ack = requesting();
+				time_left = TIMEOUT - ACTUAL_TIMEOUT;
+			}			
+			if(is_ack <0){
+				is_ack = TRUE;
+				fprintf(stderr,"FAILURE: Waiting for ACK Timeout reached\n");
+				EXIT_VALUE=EXIT_NO_RESPONSE;
+			}
 		} else {
-			EXIT_VALUE = EXIT_FAILURE;
-			fprintf(stderr,"FAILURE: Waiting for DHCPOFFER Timeout reached \n");
+			EXIT_VALUE = EXIT_NO_RESPONSE;
+			fprintf(stderr,"FAILURE: Waiting for DHCPOFFER Timeout reached\n");
 		}
 	}
 	if (EXIT_VALUE == EXIT_NORMAL) {
@@ -122,7 +138,6 @@ int selecting() {
 		printDebug("selecting", "termina selección ip");
 
 		// Envia dhcp request
-		printDebug("selecting", "se crea hilo");
 		ret = sendDHCPREQUEST();
 
 		for (i = 0; i < numMessages; i++) {
@@ -141,6 +156,7 @@ int requesting() {
 	// Recive los mensaje Offer
 	// ack_ok 1 -> ack, 0 -> nak, -1 error
 	ack_ok = get_ACK_message();
+	printDebug("requesting", "ack_ok %d", ack_ok);
 	if (ack_ok > 0) {
 		// Establece la configuracion de red del dispositivo con ioctl
 			set_device_ip();

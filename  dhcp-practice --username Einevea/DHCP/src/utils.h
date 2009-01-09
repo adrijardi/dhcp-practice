@@ -45,5 +45,6 @@ void get_next_timeout(struct timeval *tv);
 void decrease_timeout(struct timeval *tv, struct timeval *init, struct timeval *end);
 int compare_haddress(char *);
 int writeDnsList();
+int getServerOption(struct mdhcp_t ip);
 
 #endif /* UTILS_H_ */
