@@ -127,7 +127,6 @@ int sendDHCPREQUEST() {
 	opt_size = getDhcpRequestOptions(options);
 	dhcpRequest->options = (*options);
 	dhcpRequest->opt_length = opt_size;
-
 	// Se envia el mensaje dhcp request a broadcast
 	if (sendETH_Msg(dhcpRequest, INADDR_BROADCAST) >= 0) {
 		printTrace(XID, DHCPREQUEST, inet_ntoa(SERVER_ADDRESS));
@@ -149,6 +148,7 @@ int sendDHCPRELEASE() {
 	char ** options;
 	int opt_size;
 	int ret;
+	int aux;
 	char * msgString;
 
 	printDebug("sendDHCPRELEASE", "");
@@ -159,7 +159,8 @@ int sendDHCPRELEASE() {
 	dhcp_msg->hlen = 6;
 	dhcp_msg->xid = XID;
 	dhcp_msg->secs = 0;
-	memcpy(&dhcp_msg->ciaddr, &SELECTED_ADDRESS.s_addr, sizeof(in_addr_t));
+	aux = htonl(SELECTED_ADDRESS.s_addr);
+	memcpy(&dhcp_msg->ciaddr, &aux, sizeof(in_addr_t));
 	memcpy(dhcp_msg->chaddr, HADDRESS, dhcp_msg->hlen);
 
 	options = malloc(4);
@@ -297,12 +298,13 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 
 						ip_addr_temp.s_addr = ntohl(messages[num_dhcp].yiaddr);
 						serv_addr_temp.s_addr = ntohl(messages[num_dhcp].siaddr);
-
+						if(serv_addr_temp.s_addr==0){
+							serv_addr_temp.s_addr = getServerOption(messages[num_dhcp]);
+						}
 						straux = inet_ntoa(serv_addr_temp);
 						str_serv_addr = malloc(strlen(straux)+1);
 						bzero(str_serv_addr, strlen(straux)+1);
 						memcpy(str_serv_addr, straux, strlen(straux));
-
 						straux = inet_ntoa(ip_addr_temp);
 						str_ip_addr = malloc(strlen(straux)+1);
 						bzero(str_ip_addr, strlen(straux)+1);
@@ -313,6 +315,7 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 						printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
 
 						free(msg_string);
+
 						printDebug("get_selecting_messages", "ipOrigen %d",messages[num_dhcp].siaddr);
 						printDebug("get_selecting_messages", "id %d",messages[num_dhcp].xid);
 
@@ -332,7 +335,6 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	free(buf);
 	free(str_serv_addr);
 	free(str_ip_addr);
-
 	return ret;
 }
 
@@ -366,7 +368,7 @@ int get_ACK_message() {
 		gettimeofday(&end, NULL);
 		decrease_timeout(&tv, &init, &end);
 		printDebug("get_ACK_message", "Timeout sec:%d, usec:%d", tv.tv_sec, tv.tv_usec);
-
+		printDebug("get_ACK_message", "ret %d", ret);
 		if(ret < 0) {
 			perror("select");
 		} else if(ret> 0) {
@@ -390,9 +392,10 @@ int get_ACK_message() {
 							printDebug("get_ACK_message", "id %d",dhcp_recv.xid);
 						} else {
 							printDebug("get_ACK_message", "Distinto Xid");
-							if(dhcp_recv.opt_length> 0)
-								free(dhcp_recv.options);
 						}
+						
+						if(dhcp_recv.opt_length> 0)
+							free(dhcp_recv.options);
 					}
 				}
 				else printDebug("get_ACK_message", "El paquete no es dhcp\n");
@@ -413,10 +416,13 @@ int get_ACK_message() {
 		printTrace(dhcp_recv.xid, DHCPACK, tempmsg);
 	}
 	ret = ack;
-	if(dhcp_recv.opt_length> 0)
+	if((ack =! -1) && (dhcp_recv.opt_length> 0)){
+		printDebug("get_ACK_message", "free options");
 		free(dhcp_recv.options);
+	}
+	printDebug("get_ACK_message", "free buf");
 	free(buf);
-
+	printDebug("get_ACK_message", "end");
 	return ret;
 }
 

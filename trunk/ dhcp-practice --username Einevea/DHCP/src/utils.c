@@ -184,7 +184,11 @@ char* getNetConfigTrace(){
 	sprintf(msg, "%s subnet mask: %s;",aux, inet_ntoa(SUBNET_MASK->sin_addr));
 
 	//Se rellena el router y el hostname del servidor
-	sprintf(aux, "%s router: %s; server hostname %s;",msg, inet_ntoa(ROUTERS_LIST[0]), SERVER_HOSTNAME);
+	if(SERVER_HOSTNAME != NULL){
+		sprintf(aux, "%s router: %s; server hostname %s;",msg, inet_ntoa(ROUTERS_LIST[0]), SERVER_HOSTNAME);
+	}else{
+		sprintf(aux, "%s router: %s; server hostname -;",msg, inet_ntoa(ROUTERS_LIST[0]));		
+	}
 
 	//Se rellenan los DNS
 	if(DOMAIN_LIST_SIZE >= 1){
@@ -210,7 +214,7 @@ char* getNetConfigTrace(){
 void time_wait(int microsec) {
 	unsigned long time = microsec * 1000;
 	usleep(time);
-	time++; //TODO LOL
+	time++;
 }
 
 // Obtiene la dirección hardware del actual equipo.
@@ -254,7 +258,7 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 	u_int32_t aux;
 	SELECTED_ADDRESS.s_addr = ntohl(ip_list[0].yiaddr);
 	SERVER_ADDRESS.s_addr = ntohl(ip_list[0].siaddr);
-
+	getServerOption(ip_list[0]);
 	p = 4;
 	lenght = (ip_list[0].opt_length) - 2;
 	printDebug("setMSGInfo", "l%d", lenght);
@@ -262,7 +266,13 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 		case_ = ip_list[0].options[p++];
 		printDebug("setMSGInfo", "%u \t %d", case_, p);
 		switch (case_) {
+		case 0:
+			//End Options
+			printDebug("getServerOption", "paso por end?");
+			p = lenght +1;
+			break;
 		case 1:
+			printDebug("getServerOption", "Subnet Mask");
 			//Subnet Mask
 			if (SUBNET_MASK != NULL) {
 				free(SUBNET_MASK);
@@ -347,15 +357,24 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 		case 51:
 			//Lease time
 			h = ip_list[0].options[p++];
-			i = 0;
 			aux32 = 0;
 			memcpy(&aux32, &ip_list[0].options[p], 4);
-			i+=4;
+			p+=h;
 			LEASE = ntohl(aux32);
+			break;
+		case 54:
+			//Server IP
+			h = ip_list[0].options[p++];
+			memcpy(&aux32, &ip_list[0].options[p], 4);
+			if(SERVER_ADDRESS.s_addr == 0){
+				SERVER_ADDRESS.s_addr = aux32;
+			}
+			p += h;
 			break;
 		case 0xff:
 			//End Options
 			printDebug("setMSGInfo", "paso por end");
+			p = lenght +1;
 			break;
 
 		default:
@@ -365,6 +384,45 @@ void setMSGInfo(struct mdhcp_t ip_list[]) {
 			break;
 		}
 	}
+}
+
+
+int getServerOption(struct mdhcp_t ip) {
+	u_int case_;
+	int p, h, lenght;
+	u_int32_t aux32;
+
+	p = 4;
+	lenght = (ip.opt_length) - 2;
+	printDebug("getServerOption", "l%d", lenght);
+	while (p < lenght) {
+		case_ = ip.options[p++];
+		printDebug("getServerOption", "%u \t %d", case_, p);
+		switch (case_) {
+			case 0:
+			//End Options
+			printDebug("getServerOption", "paso por end?");
+			p = lenght +1;
+			break;
+		case 54:
+			//Server IP
+			h = ip.options[p++];
+			memcpy(&aux32, &ip.options[p], 4);
+			p += h;
+			break;
+		case 0xff:
+			//End Options
+			printDebug("getServerOption", "paso por end");
+			p = lenght +1;
+			break;
+		default:
+			// Se ignora el campo
+			h = ip.options[p++];
+			p += h;
+			break;
+		}
+	}
+	return aux32;
 }
 
 // Establece la dirección ip del intefaz.
@@ -527,7 +585,7 @@ void device_down() {
 	close(fd);
 }
 
-// Eleva un número al otro, parece que no sirve para nada, ya que se podría hacer con x^y
+// Eleva un número al otro, parece que no sirve para nada, ya que se podría hacer con pow
 // pero tiene funcionamientos ocultos.
 int pow_utils(int x, int y){
 	int ret,i;
