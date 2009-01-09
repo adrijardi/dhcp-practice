@@ -315,6 +315,8 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 						printTrace(messages[num_dhcp].xid, DHCPOFFER, msg_string);
 
 						free(msg_string);
+						free(str_serv_addr);
+						free(str_ip_addr);
 
 						printDebug("get_selecting_messages", "ipOrigen %d",messages[num_dhcp].siaddr);
 						printDebug("get_selecting_messages", "id %d",messages[num_dhcp].xid);
@@ -333,8 +335,6 @@ int get_selecting_messages(struct mdhcp_t messages[]) {
 	}
 	ret = num_dhcp;
 	free(buf);
-	free(str_serv_addr);
-	free(str_ip_addr);
 	return ret;
 }
 
@@ -393,7 +393,7 @@ int get_ACK_message() {
 						} else {
 							printDebug("get_ACK_message", "Distinto Xid");
 						}
-						
+
 						if(dhcp_recv.opt_length> 0)
 							free(dhcp_recv.options);
 					}
